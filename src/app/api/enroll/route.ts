@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { sendWelcomeEmail } from '@/lib/resend/send-welcome-email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,6 +62,23 @@ export async function POST(request: NextRequest) {
         message: `You have been enrolled in "${course.title}". Start studying now!`,
         link: `/student/courses/${courseId}`,
       })
+
+    // Send welcome email
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email, first_name')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.email) {
+      const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://extension.fcdc-services.com').replace(/\/$/, '')
+      await sendWelcomeEmail({
+        to: profile.email,
+        firstName: profile.first_name || 'Student',
+        courseName: course.title,
+        courseUrl: `${appUrl}/student/courses/${courseId}`,
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

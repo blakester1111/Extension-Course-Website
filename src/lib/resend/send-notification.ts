@@ -14,7 +14,7 @@ export async function sendNotificationEmail({ to, subject, text, link }: Notific
       : ''
 
     await resend.emails.send({
-      from: 'FCDC Extension Courses <noreply@fcdc-courses.com>',
+      from: 'FCDC Extension Courses <extensioncourses@fcdc-services.com>',
       to,
       subject: `[FCDC] ${subject}`,
       html: `

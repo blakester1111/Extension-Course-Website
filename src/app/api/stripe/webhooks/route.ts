@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe/client'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendSaleNotificationEmail } from '@/lib/resend/send-sale-notification'
+import { sendWelcomeEmail } from '@/lib/resend/send-welcome-email'
 import Stripe from 'stripe'
 
 export async function POST(req: NextRequest) {
@@ -112,6 +113,17 @@ export async function POST(req: NextRequest) {
               message: `You have been enrolled in "${course?.title}". Start studying now!`,
               link: `/student/courses/${courseId}`,
             })
+
+          // Send welcome email to the student
+          if (course) {
+            const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://extension.fcdc-services.com').replace(/\/$/, '')
+            await sendWelcomeEmail({
+              to: order.customer_email,
+              firstName: order.customer_first_name,
+              courseName: course.title,
+              courseUrl: `${appUrl}/student/courses/${courseId}`,
+            })
+          }
         }
       }
 

@@ -91,12 +91,12 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Welcome Back</CardTitle>
-        <CardDescription>Sign in to your FCDC Extension Course account</CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Welcome Back</CardTitle>
+          <CardDescription>Sign in to your FCDC Extension Course account</CardDescription>
+        </CardHeader>
         <CardContent className="space-y-4">
           {error && (
             <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
@@ -108,6 +108,7 @@ export function LoginForm() {
             <Input
               id="email"
               type="email"
+              autoComplete="email"
               placeholder="you@example.com"
               {...register('email')}
             />
@@ -120,6 +121,7 @@ export function LoginForm() {
             <Input
               id="password"
               type="password"
+              autoComplete="current-password"
               {...register('password')}
             />
             {errors.password && (
@@ -143,7 +145,7 @@ export function LoginForm() {
             </p>
           </div>
         </CardFooter>
-      </form>
-    </Card>
+      </Card>
+    </form>
   )
 }

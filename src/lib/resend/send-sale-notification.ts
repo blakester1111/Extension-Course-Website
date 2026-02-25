@@ -95,7 +95,7 @@ export async function sendSaleNotificationEmail(params: SaleNotificationParams) 
 
   try {
     await resend.emails.send({
-      from: 'FCDC Extension Courses <noreply@fcdc-courses.com>',
+      from: 'FCDC Extension Courses <info@fcdc-services.com>',
       to: recipients,
       subject: '[FCDC] Extension Course Sale',
       html,

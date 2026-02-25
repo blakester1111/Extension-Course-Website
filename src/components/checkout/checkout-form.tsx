@@ -99,6 +99,7 @@ export function CheckoutForm({
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
+                autoComplete="given-name"
                 placeholder="John"
               />
             </div>
@@ -109,6 +110,7 @@ export function CheckoutForm({
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
+                autoComplete="family-name"
                 placeholder="Doe"
               />
             </div>
@@ -123,6 +125,7 @@ export function CheckoutForm({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
               placeholder="john@example.com"
             />
           </div>
@@ -135,6 +138,7 @@ export function CheckoutForm({
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              autoComplete="tel"
               placeholder="(555) 123-4567"
             />
           </div>
@@ -146,6 +150,7 @@ export function CheckoutForm({
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
+              autoComplete="street-address"
               placeholder="123 Main St"
             />
           </div>
@@ -157,6 +162,7 @@ export function CheckoutForm({
                 id="city"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
+                autoComplete="address-level2"
                 placeholder="Washington"
               />
             </div>
@@ -166,6 +172,7 @@ export function CheckoutForm({
                 id="state"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
+                autoComplete="address-level1"
                 placeholder="DC"
               />
             </div>
@@ -178,6 +185,7 @@ export function CheckoutForm({
                 id="zip"
                 value={zip}
                 onChange={(e) => setZip(e.target.value)}
+                autoComplete="postal-code"
                 placeholder="20001"
               />
             </div>
@@ -187,6 +195,7 @@ export function CheckoutForm({
                 id="country"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
+                autoComplete="country-name"
                 placeholder="US"
               />
             </div>
