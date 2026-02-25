@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe/client'
+import { getStripe } from '@/lib/stripe/client'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendSaleNotificationEmail } from '@/lib/resend/send-sale-notification'
 import Stripe from 'stripe'
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     // If webhook secret is configured, verify signature
     if (process.env.STRIPE_WEBHOOK_SECRET) {
-      event = stripe.webhooks.constructEvent(
+      event = getStripe().webhooks.constructEvent(
         body,
         signature!,
         process.env.STRIPE_WEBHOOK_SECRET
