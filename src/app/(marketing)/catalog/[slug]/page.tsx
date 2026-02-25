@@ -88,6 +88,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
           ) : user ? (
             <PurchaseButton
               courseId={course.id}
+              courseSlug={course.slug}
               priceCents={course.price_cents}
               checkoutUrl={course.checkout_url}
             />
