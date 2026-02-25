@@ -57,7 +57,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
   return (
     <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
       {/* Top section: Image + Course Info */}
-      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start">
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-end">
         <div className="bg-muted rounded-lg flex items-center justify-center p-4 shrink-0">
           {course.image_url ? (
             <img
@@ -75,6 +75,25 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
         </div>
 
         <div className="space-y-4">
+          <div className="space-y-1 text-sm">
+            <p>
+              <span className="text-muted-foreground">Donation:</span>{' '}
+              <span className="font-semibold">
+                {course.price_cents === 0 ? 'Free' : `$${(course.price_cents / 100).toFixed(0)}`}
+              </span>
+            </p>
+            {course.length_hours && (
+              <p>
+                <span className="text-muted-foreground">Length:</span>{' '}
+                <span className="font-semibold">{course.length_hours} hours</span>
+              </p>
+            )}
+            <p>
+              <span className="text-muted-foreground">Category:</span>{' '}
+              <span className="font-semibold">{categoryLabel}</span>
+            </p>
+          </div>
+
           {isEnrolled ? (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-green-600">
@@ -97,25 +116,6 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
               <Link href={`/login?redirect=/catalog/${course.slug}`}>Sign In to Enroll</Link>
             </Button>
           )}
-
-          <div className="space-y-1 text-sm">
-            <p>
-              <span className="text-muted-foreground">Donation:</span>{' '}
-              <span className="font-semibold">
-                {course.price_cents === 0 ? 'Free' : `$${(course.price_cents / 100).toFixed(0)}`}
-              </span>
-            </p>
-            {course.length_hours && (
-              <p>
-                <span className="text-muted-foreground">Length:</span>{' '}
-                <span className="font-semibold">{course.length_hours} hours</span>
-              </p>
-            )}
-            <p>
-              <span className="text-muted-foreground">Category:</span>{' '}
-              <span className="font-semibold">{categoryLabel}</span>
-            </p>
-          </div>
         </div>
       </div>
 

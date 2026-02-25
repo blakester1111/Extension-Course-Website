@@ -43,7 +43,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This is a free course — enroll directly' }, { status: 400 })
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // Derive the app URL from the request origin
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.replace(/\/[^/]*$/, '') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = origin.replace(/\/$/, '')
 
     // Create order record
     const { data: order, error: orderError } = await supabase
