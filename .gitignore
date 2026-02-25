@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Large assets and working documents
+softcopy lessons/
+Image assets/
+course-audit-report.docx
+course-audit-report.txt
+lesson-import-report.txt
+ENV_SETUP_INSTRUCTIONS.txt
