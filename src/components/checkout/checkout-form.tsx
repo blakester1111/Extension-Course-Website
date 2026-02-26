@@ -132,12 +132,13 @@ export function CheckoutForm({
 
           {/* Phone */}
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
+            <Label htmlFor="phone">Phone *</Label>
             <Input
               id="phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              required
               autoComplete="tel"
               placeholder="(555) 123-4567"
             />
@@ -145,11 +146,12 @@ export function CheckoutForm({
 
           {/* Address */}
           <div className="space-y-2">
-            <Label htmlFor="address">Street Address</Label>
+            <Label htmlFor="address">Street Address *</Label>
             <Input
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
+              required
               autoComplete="street-address"
               placeholder="123 Main St"
             />
@@ -157,21 +159,23 @@ export function CheckoutForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
+              <Label htmlFor="city">City *</Label>
               <Input
                 id="city"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
+                required
                 autoComplete="address-level2"
                 placeholder="Washington"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
+              <Label htmlFor="state">State *</Label>
               <Input
                 id="state"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
+                required
                 autoComplete="address-level1"
                 placeholder="DC"
               />
@@ -180,21 +184,23 @@ export function CheckoutForm({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="zip">Zip Code</Label>
+              <Label htmlFor="zip">Zip Code *</Label>
               <Input
                 id="zip"
                 value={zip}
                 onChange={(e) => setZip(e.target.value)}
+                required
                 autoComplete="postal-code"
                 placeholder="20001"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="country">Country</Label>
+              <Label htmlFor="country">Country *</Label>
               <Input
                 id="country"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
+                required
                 autoComplete="country-name"
                 placeholder="US"
               />

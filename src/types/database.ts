@@ -2,7 +2,7 @@ export type UserRole = 'student' | 'supervisor' | 'admin' | 'super_admin'
 export type CourseCategory = 'basics' | 'congresses' | 'accs'
 export type SubmissionStatus = 'draft' | 'submitted' | 'graded_pass' | 'graded_corrections'
 export type EnrollmentStatus = 'active' | 'pending_invoice_verification'
-export type NotificationType = 'lesson_graded' | 'lesson_submitted' | 'enrollment_confirmed' | 'corrections_needed' | 'invoice_pending' | 'invoice_verified'
+export type NotificationType = 'lesson_graded' | 'lesson_submitted' | 'enrollment_confirmed' | 'corrections_needed' | 'invoice_pending' | 'invoice_verified' | 'nudge'
 
 export interface Profile {
   id: string

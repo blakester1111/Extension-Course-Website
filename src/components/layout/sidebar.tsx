@@ -16,6 +16,8 @@ import {
   Trophy,
   GraduationCap,
   Shield,
+  BarChart3,
+  DollarSign,
 } from 'lucide-react'
 import {
   Tooltip,
@@ -47,6 +49,7 @@ const supervisorLinks: SidebarLink[] = [
   { href: '/supervisor/queue', label: 'Grading Queue', icon: ClipboardCheck },
   { href: '/supervisor/enrollments', label: 'Pending Invoices', icon: FileText },
   { href: '/supervisor/students', label: 'Students', icon: Users },
+  { href: '/supervisor/reports', label: 'Reports', icon: BarChart3 },
 ]
 
 const adminLinks: SidebarLink[] = [
@@ -56,6 +59,8 @@ const adminLinks: SidebarLink[] = [
   { href: '/admin/students', label: 'Users', icon: Users },
   { href: '/supervisor/queue', label: 'Grading Queue', icon: ClipboardCheck },
   { href: '/supervisor/students', label: 'All Students Progress', icon: FileText },
+  { href: '/supervisor/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/admin/reports/revenue', label: 'Revenue', icon: DollarSign },
 ]
 
 const superAdminLinks: SidebarLink[] = [
