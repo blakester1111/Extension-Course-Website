@@ -18,6 +18,7 @@ interface GradingFormProps {
   submission: LessonSubmission
   answers: AnswerWithQuestion[]
   totalQuestions: number
+  questionOffset?: number
 }
 
 type GradeState = {
@@ -26,7 +27,7 @@ type GradeState = {
   locked: boolean
 }
 
-export function GradingForm({ submission, answers, totalQuestions }: GradingFormProps) {
+export function GradingForm({ submission, answers, totalQuestions, questionOffset = 0 }: GradingFormProps) {
   const isResubmission = submission.grade !== null
   const isAlreadyGraded = submission.status === 'graded_pass' || submission.status === 'graded_corrections'
 
@@ -95,7 +96,7 @@ export function GradingForm({ submission, answers, totalQuestions }: GradingForm
             <Card key={answer.id} className="border-l-4 border-l-green-500 bg-muted/30">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <span className="text-muted-foreground font-mono text-sm">{index + 1}.</span>
+                  <span className="text-muted-foreground font-mono text-sm">{questionOffset + index + 1}.</span>
                   <span className="flex-1">{answer.question?.question_text}</span>
                   <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 shrink-0">
                     <Lock className="h-3 w-3 mr-1" />
@@ -128,7 +129,7 @@ export function GradingForm({ submission, answers, totalQuestions }: GradingForm
           <Card key={answer.id} className={borderClass}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <span className="text-muted-foreground font-mono text-sm">{index + 1}.</span>
+                <span className="text-muted-foreground font-mono text-sm">{questionOffset + index + 1}.</span>
                 <span className="flex-1">{answer.question?.question_text}</span>
                 {isAlreadyGraded && (
                   answer.needs_correction

@@ -17,9 +17,10 @@ interface LessonFormProps {
   questions: Question[]
   existingAnswers: Answer[]
   totalQuestions: number
+  questionOffset?: number
 }
 
-export function LessonForm({ submission, questions, existingAnswers, totalQuestions }: LessonFormProps) {
+export function LessonForm({ submission, questions, existingAnswers, totalQuestions, questionOffset = 0 }: LessonFormProps) {
   const router = useRouter()
   const isReadOnly = submission.status === 'submitted' || submission.status === 'graded_pass'
   const isCorrections = submission.status === 'graded_corrections'
@@ -148,7 +149,7 @@ export function LessonForm({ submission, questions, existingAnswers, totalQuesti
           <Card key={question.id} className={cardClass}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <span className="text-muted-foreground font-mono text-sm">{index + 1}.</span>
+                <span className="text-muted-foreground font-mono text-sm">{questionOffset + index + 1}.</span>
                 <span className="flex-1">{question.question_text}</span>
                 {hasGrade && (isCorrections || submission.status === 'graded_pass') && (
                   isQuestionCorrect ? (

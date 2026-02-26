@@ -19,6 +19,41 @@ async function requireAdmin() {
   return { supabase, user }
 }
 
+// Regex to detect "Lesson N" or "Lesson N: ..." or "Lesson N - ..." at the start of a title
+const LESSON_NUM_RE = /^(Lesson\s+)\d+/i
+
+/**
+ * Renumber all lessons in a course whose titles match the "Lesson #" pattern.
+ * Titles like "Lesson 5" or "Lesson 12: Some Topic" get their number updated
+ * to match their position (1-based) in sort_order among ALL lessons in the course.
+ */
+async function renumberLessonTitles(supabase: any, courseId: string) {
+  const { data: lessons } = await supabase
+    .from('lessons')
+    .select('id, title, sort_order')
+    .eq('course_id', courseId)
+    .order('sort_order', { ascending: true })
+
+  if (!lessons || lessons.length === 0) return
+
+  const updates: Promise<any>[] = []
+  for (let i = 0; i < lessons.length; i++) {
+    const lesson = lessons[i]
+    const match = lesson.title.match(LESSON_NUM_RE)
+    if (match) {
+      const expectedNum = i + 1
+      const newTitle = lesson.title.replace(LESSON_NUM_RE, `${match[1]}${expectedNum}`)
+      if (newTitle !== lesson.title) {
+        updates.push(
+          supabase.from('lessons').update({ title: newTitle }).eq('id', lesson.id)
+        )
+      }
+    }
+  }
+
+  if (updates.length > 0) await Promise.all(updates)
+}
+
 export async function createLesson(courseId: string, formData: FormData) {
   const { supabase } = await requireAdmin()
 
@@ -93,6 +128,9 @@ export async function deleteLesson(lessonId: string, courseId: string) {
     return { error: error.message }
   }
 
+  // Renumber remaining lessons with "Lesson #" pattern
+  await renumberLessonTitles(supabase, courseId)
+
   revalidatePath(`/admin/courses/${courseId}/lessons`)
 }
 
@@ -104,6 +142,10 @@ export async function reorderLessons(courseId: string, lessonIds: string[]) {
   )
 
   await Promise.all(updates)
+
+  // Renumber lessons with "Lesson #" pattern to match new order
+  await renumberLessonTitles(supabase, courseId)
+
   revalidatePath(`/admin/courses/${courseId}/lessons`)
 }
 
@@ -120,6 +162,26 @@ export async function updateLessonInstructions(lessonId: string, courseId: strin
   }
 
   revalidatePath(`/admin/courses/${courseId}/lessons/${lessonId}`)
+}
+
+export async function updateLessonTitle(lessonId: string, courseId: string, title: string) {
+  const { supabase } = await requireAdmin()
+
+  const trimmed = title.trim()
+  if (!trimmed) return { error: 'Title cannot be empty' }
+
+  const { error } = await supabase
+    .from('lessons')
+    .update({ title: trimmed })
+    .eq('id', lessonId)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath(`/admin/courses/${courseId}/lessons`)
+  revalidatePath(`/admin/courses/${courseId}/lessons/${lessonId}`)
+  return {}
 }
 
 export async function createQuestion(lessonId: string, courseId: string, formData: FormData) {

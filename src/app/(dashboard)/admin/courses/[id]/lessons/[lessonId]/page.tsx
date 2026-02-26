@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { QuestionList } from '@/components/admin/question-list'
 import { LessonInstructions } from '@/components/admin/lesson-instructions'
+import { EditableLessonTitle } from '@/components/admin/editable-lesson-title'
 import { ArrowLeft } from 'lucide-react'
 
 export const metadata = {
@@ -36,6 +37,24 @@ export default async function AdminQuestionsPage({
     .eq('lesson_id', lessonId)
     .order('sort_order', { ascending: true })
 
+  // Compute cumulative question offset (questions in all prior lessons)
+  const { data: priorLessons } = await supabase
+    .from('lessons')
+    .select('id, sort_order')
+    .eq('course_id', lesson.course_id)
+    .lt('sort_order', lesson.sort_order)
+    .order('sort_order', { ascending: true })
+
+  let questionOffset = 0
+  if (priorLessons && priorLessons.length > 0) {
+    const priorIds = priorLessons.map(l => l.id)
+    const { count } = await supabase
+      .from('questions')
+      .select('id', { count: 'exact', head: true })
+      .in('lesson_id', priorIds)
+    questionOffset = count || 0
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -46,7 +65,11 @@ export default async function AdminQuestionsPage({
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">{lesson.title}</h1>
+          <EditableLessonTitle
+            lessonId={lessonId}
+            courseId={id}
+            initialTitle={lesson.title}
+          />
           <p className="text-muted-foreground">{(lesson as any).course?.title}</p>
         </div>
       </div>
@@ -57,7 +80,7 @@ export default async function AdminQuestionsPage({
         initialInstructions={lesson.instructions || ''}
       />
 
-      <QuestionList lessonId={lessonId} courseId={id} questions={questions || []} />
+      <QuestionList lessonId={lessonId} courseId={id} questions={questions || []} questionOffset={questionOffset} />
     </div>
   )
 }

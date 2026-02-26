@@ -57,6 +57,24 @@ export default async function StudentLessonPage({ params }: { params: Promise<{ 
     .select('*')
     .eq('submission_id', submission.id)
 
+  // Compute cumulative question offset (questions in all prior lessons)
+  const { data: priorLessons } = await supabase
+    .from('lessons')
+    .select('id, sort_order')
+    .eq('course_id', courseId)
+    .lt('sort_order', lesson.sort_order)
+    .order('sort_order', { ascending: true })
+
+  let questionOffset = 0
+  if (priorLessons && priorLessons.length > 0) {
+    const priorIds = priorLessons.map(l => l.id)
+    const { count } = await supabase
+      .from('questions')
+      .select('id', { count: 'exact', head: true })
+      .in('lesson_id', priorIds)
+    questionOffset = count || 0
+  }
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center gap-4">
@@ -98,6 +116,7 @@ export default async function StudentLessonPage({ params }: { params: Promise<{ 
         questions={questions || []}
         existingAnswers={answers || []}
         totalQuestions={(questions || []).length}
+        questionOffset={questionOffset}
       />
     </div>
   )

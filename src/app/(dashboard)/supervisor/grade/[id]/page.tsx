@@ -46,6 +46,33 @@ export default async function GradeSubmissionPage({ params }: { params: Promise<
     .select('id', { count: 'exact', head: true })
     .eq('lesson_id', submission.lesson_id)
 
+  // Compute cumulative question offset (questions in all prior lessons)
+  const lessonData = submission as any
+  const courseId = lessonData.lesson?.course_id
+  const { data: currentLesson } = await supabase
+    .from('lessons')
+    .select('sort_order')
+    .eq('id', submission.lesson_id)
+    .single()
+
+  let questionOffset = 0
+  if (courseId && currentLesson) {
+    const { data: priorLessons } = await supabase
+      .from('lessons')
+      .select('id')
+      .eq('course_id', courseId)
+      .lt('sort_order', currentLesson.sort_order)
+
+    if (priorLessons && priorLessons.length > 0) {
+      const priorIds = priorLessons.map(l => l.id)
+      const { count } = await supabase
+        .from('questions')
+        .select('id', { count: 'exact', head: true })
+        .in('lesson_id', priorIds)
+      questionOffset = count || 0
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center gap-4">
@@ -67,7 +94,7 @@ export default async function GradeSubmissionPage({ params }: { params: Promise<
         </p>
       </div>
 
-      <GradingForm submission={submission} answers={sortedAnswers} totalQuestions={totalQuestions || 0} />
+      <GradingForm submission={submission} answers={sortedAnswers} totalQuestions={totalQuestions || 0} questionOffset={questionOffset} />
     </div>
   )
 }

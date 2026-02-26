@@ -12,9 +12,10 @@ interface QuestionListProps {
   lessonId: string
   courseId: string
   questions: Question[]
+  questionOffset?: number
 }
 
-export function QuestionList({ lessonId, courseId, questions: initialQuestions }: QuestionListProps) {
+export function QuestionList({ lessonId, courseId, questions: initialQuestions, questionOffset = 0 }: QuestionListProps) {
   const [questions, setQuestions] = useState(initialQuestions)
   const [newQuestion, setNewQuestion] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -75,7 +76,7 @@ export function QuestionList({ lessonId, courseId, questions: initialQuestions }
         {questions.map((q, index) => (
           <div key={q.id} className="flex gap-2 items-start border rounded-md p-3">
             <span className="text-sm font-mono text-muted-foreground mt-2 min-w-[2rem]">
-              {index + 1}.
+              {questionOffset + index + 1}.
             </span>
             {editingId === q.id ? (
               <div className="flex-1 space-y-2">
