@@ -3,47 +3,70 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { CourseAnalytics } from '@/components/reports/course-analytics'
+import { ReportFilters } from '@/components/reports/report-filters'
+import { filterByOrg, filterByStaff, resolveOrgDefault } from '@/lib/org-filter'
+import { Suspense } from 'react'
 
 export const metadata = {
   title: 'Course Analytics — FCDC Extension Courses',
 }
 
-export default async function CourseAnalyticsPage() {
+export default async function CourseAnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>
+}) {
+  const params = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, organization')
     .eq('id', user.id)
     .single()
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin'
+  const orgFilter = resolveOrgDefault(params.org, profile?.organization)
 
   // Get all published courses
   const { data: courses } = await supabase
     .from('courses')
-    .select('id, title, lesson_count')
+    .select('id, title, lesson_count, category')
     .eq('is_published', true)
     .order('title')
 
-  // Get scoped student IDs
-  let studentIds: string[] = []
-  if (isAdmin) {
-    const { data: students } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('role', 'student')
-    studentIds = (students || []).map(s => s.id)
-  } else {
-    const { data: students } = await supabase
+  // Get ALL enrolled users via enrollments table (any role)
+  const { data: enrollmentRows } = await supabase
+    .from('enrollments')
+    .select('student_id')
+    .eq('status', 'active')
+
+  let enrolledIds = [...new Set((enrollmentRows || []).map(e => e.student_id))]
+
+  if (!isAdmin) {
+    // Supervisor: filter to assigned students + unassigned
+    const { data: assignedStudents } = await supabase
       .from('profiles')
       .select('id')
       .eq('supervisor_id', user.id)
-      .eq('role', 'student')
-    studentIds = (students || []).map(s => s.id)
+    const { data: unassignedStudents } = await supabase
+      .from('profiles')
+      .select('id')
+      .is('supervisor_id', null)
+    const visibleIds = new Set([
+      ...(assignedStudents || []).map(s => s.id),
+      ...(unassignedStudents || []).map(s => s.id),
+    ])
+    enrolledIds = enrolledIds.filter(id => visibleIds.has(id))
   }
+
+  // Apply audience and organization filters
+  enrolledIds = await filterByStaff(supabase, enrolledIds, params.audience)
+  enrolledIds = await filterByOrg(supabase, enrolledIds, orgFilter)
+
+  const studentIds = enrolledIds
 
   if (!courses || courses.length === 0 || studentIds.length === 0) {
     return (
@@ -130,6 +153,7 @@ export default async function CourseAnalyticsPage() {
     return {
       id: course.id,
       title: course.title,
+      category: course.category,
       lessonCount: course.lesson_count,
       enrollmentCount,
       completionCount,
@@ -143,5 +167,12 @@ export default async function CourseAnalyticsPage() {
     }
   })
 
-  return <CourseAnalytics courses={courseData} />
+  return (
+    <div className="space-y-6">
+      <Suspense>
+        <ReportFilters defaultOrg={orgFilter} />
+      </Suspense>
+      <CourseAnalytics courses={courseData} />
+    </div>
+  )
 }

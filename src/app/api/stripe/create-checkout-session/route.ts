@@ -16,10 +16,15 @@ export async function POST(req: NextRequest) {
       city,
       state,
       zip,
+      organization,
     } = body
 
     if (!courseId || !firstName || !lastName || !email || !phone || !address || !city || !state || !zip || !country) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
+    }
+
+    if (!organization || !['day', 'foundation', 'unknown'].includes(organization)) {
+      return NextResponse.json({ error: 'Please select an organization' }, { status: 400 })
     }
 
     const supabase = createAdminClient()
@@ -47,6 +52,9 @@ export async function POST(req: NextRequest) {
     const origin = req.headers.get('origin') || req.headers.get('referer')?.replace(/\/[^/]*$/, '') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     const appUrl = origin.replace(/\/$/, '')
 
+    // Map organization value for storage (unknown = null)
+    const orgValue = organization === 'unknown' ? null : organization
+
     // Create order record
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -62,6 +70,7 @@ export async function POST(req: NextRequest) {
         customer_city: city || null,
         customer_state: state || null,
         customer_zip: zip || null,
+        organization: orgValue,
         status: 'pending',
       })
       .select('id')
@@ -103,6 +112,7 @@ export async function POST(req: NextRequest) {
         customer_city: city || '',
         customer_state: state || '',
         customer_zip: zip || '',
+        organization: organization,
       },
       success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${order.id}`,
       cancel_url: `${appUrl}/catalog/${course.slug}`,

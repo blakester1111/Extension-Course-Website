@@ -17,7 +17,15 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false)
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect')
+  const urlError = searchParams.get('error')
   const supabase = createClient()
+
+  // Show account suspended message if redirected from middleware
+  useEffect(() => {
+    if (urlError === 'account-suspended') {
+      setError('Your account has been suspended. Please contact FCDC if you believe this is in error.')
+    }
+  }, [urlError])
 
   // If already signed in, redirect to dashboard
   useEffect(() => {
@@ -64,9 +72,17 @@ export function LoginForm() {
       if (signedInUser) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, is_deadfiled')
           .eq('id', signedInUser.id)
           .single()
+
+        // Block deadfiled users
+        if (profile?.is_deadfiled) {
+          await supabase.auth.signOut()
+          setError('Your account has been suspended. Please contact FCDC if you believe this is in error.')
+          setLoading(false)
+          return
+        }
 
         const role = profile?.role
         let dashboardRole: string

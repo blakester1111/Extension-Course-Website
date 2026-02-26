@@ -3,10 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Clock, CheckCircle, Target, Star } from 'lucide-react'
+import { Clock, CheckCircle, Target, AlertTriangle } from 'lucide-react'
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -18,41 +18,53 @@ interface SupervisorGradingData {
   name: string
   graded: number
   avgTurnaroundHours: number
-  firstPassRate: number
+  passRate: number
   passed: number
   corrections: number
 }
 
 interface GradingStatsProps {
   totalGraded: number
-  gradedThisWeek: number
+  gradedCurrentPeriod: number
   avgTurnaroundHours: number
-  firstPassRate: number
+  passRate: number
+  correctionRate: number
   avgGrade: number
   supervisors: SupervisorGradingData[]
-  weeklyData: { week: string; count: number }[]
+  chartData: { label: string; graded: number }[]
+  mode: string
 }
 
 function formatTurnaround(hours: number): string {
   if (hours < 1) return `${Math.round(hours * 60)}m`
   if (hours < 24) return `${Math.round(hours)}h`
-  const days = Math.round(hours / 24)
+  const days = Math.round(hours / 24 * 10) / 10
   return `${days}d`
+}
+
+const modeLabels: Record<string, string> = {
+  thisweek: 'Grading Activity (This Week)',
+  daily: 'Grading Activity (Last 7 Days)',
+  weekly: 'Grading Activity (Last 12 Weeks)',
+  monthly: 'Grading Activity (Last 12 Months)',
+  custom: 'Grading Activity (Custom Range)',
 }
 
 export function GradingStats({
   totalGraded,
-  gradedThisWeek,
+  gradedCurrentPeriod,
   avgTurnaroundHours,
-  firstPassRate,
+  passRate,
+  correctionRate,
   avgGrade,
   supervisors,
-  weeklyData,
+  chartData,
+  mode,
 }: GradingStatsProps) {
   const stats = [
     {
-      label: 'Graded This Week',
-      value: gradedThisWeek.toString(),
+      label: 'Graded (Current Period)',
+      value: gradedCurrentPeriod.toString(),
       subtitle: `${totalGraded} total all time`,
       icon: CheckCircle,
     },
@@ -63,16 +75,16 @@ export function GradingStats({
       icon: Clock,
     },
     {
-      label: 'First-Pass Rate',
-      value: `${firstPassRate}%`,
-      subtitle: 'Pass without corrections',
+      label: 'Pass Rate',
+      value: `${passRate}%`,
+      subtitle: 'Of graded submissions that passed',
       icon: Target,
     },
     {
-      label: 'Avg. Grade',
-      value: avgGrade > 0 ? avgGrade.toFixed(1) : '—',
-      subtitle: 'Across all graded lessons',
-      icon: Star,
+      label: 'Correction Rate',
+      value: `${correctionRate}%`,
+      subtitle: 'Of graded submissions needing corrections',
+      icon: AlertTriangle,
     },
   ]
 
@@ -96,20 +108,19 @@ export function GradingStats({
         })}
       </div>
 
-      {/* Weekly grading chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Lessons Graded Per Week</CardTitle>
+          <CardTitle>{modeLabels[mode] || 'Grading Activity'}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
-                  dataKey="week"
+                  dataKey="label"
                   className="text-xs"
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                 />
                 <YAxis
                   className="text-xs"
@@ -124,20 +135,22 @@ export function GradingStats({
                     fontSize: '13px',
                   }}
                 />
-                <Bar
-                  dataKey="count"
+                <Line
+                  type="monotone"
+                  dataKey="graded"
                   name="Graded"
-                  fill="hsl(var(--primary))"
-                  radius={[4, 4, 0, 0]}
-                  opacity={0.8}
+                  stroke="hsl(221 83% 53%)"
+                  strokeWidth={2}
+                  dot={{ r: 4, fill: 'hsl(221 83% 53%)' }}
+                  activeDot={{ r: 6 }}
+                  connectNulls
                 />
-              </BarChart>
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      {/* Supervisor breakdown */}
       {supervisors.length > 0 && (
         <Card>
           <CardHeader>
@@ -150,7 +163,7 @@ export function GradingStats({
                   <TableHead>Supervisor</TableHead>
                   <TableHead>Total Graded</TableHead>
                   <TableHead>Avg. Turnaround</TableHead>
-                  <TableHead>First-Pass Rate</TableHead>
+                  <TableHead>Pass Rate</TableHead>
                   <TableHead>Passed</TableHead>
                   <TableHead>Corrections</TableHead>
                 </TableRow>
@@ -162,8 +175,8 @@ export function GradingStats({
                     <TableCell>{sup.graded}</TableCell>
                     <TableCell>{formatTurnaround(sup.avgTurnaroundHours)}</TableCell>
                     <TableCell>
-                      <Badge variant={sup.firstPassRate >= 80 ? 'default' : 'secondary'}>
-                        {sup.firstPassRate}%
+                      <Badge variant={sup.passRate >= 80 ? 'default' : 'secondary'}>
+                        {sup.passRate}%
                       </Badge>
                     </TableCell>
                     <TableCell className="text-green-600">{sup.passed}</TableCell>

@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { DollarSign, ShoppingCart, TrendingUp } from 'lucide-react'
 import { format } from 'date-fns'
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -20,7 +20,7 @@ interface RevenueReportProps {
   totalOrders: number
   avgOrderValue: number
   courseRevenue: { title: string; revenue: number; count: number }[]
-  monthlyData: { month: string; revenue: number; orders: number }[]
+  chartData: { label: string; revenue: number; orders: number }[]
   recentOrders: {
     id: string
     customerName: string
@@ -29,11 +29,21 @@ interface RevenueReportProps {
     amountCents: number
     status: string
     createdAt: string
+    organization?: string | null
   }[]
+  mode: string
 }
 
 function formatCents(cents: number) {
   return `$${(cents / 100).toFixed(2)}`
+}
+
+const modeLabels: Record<string, string> = {
+  thisweek: 'Revenue (This Week)',
+  daily: 'Revenue (Last 7 Days)',
+  weekly: 'Revenue (Last 12 Weeks)',
+  monthly: 'Revenue (Last 12 Months)',
+  custom: 'Revenue (Custom Range)',
 }
 
 export function RevenueReport({
@@ -41,17 +51,12 @@ export function RevenueReport({
   totalOrders,
   avgOrderValue,
   courseRevenue,
-  monthlyData,
+  chartData,
   recentOrders,
+  mode,
 }: RevenueReportProps) {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Revenue Report</h1>
-        <p className="text-muted-foreground">Financial overview of course sales</p>
-      </div>
-
-      {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -85,23 +90,19 @@ export function RevenueReport({
         </Card>
       </div>
 
-      {/* Monthly revenue chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Monthly Revenue (Last 12 Months)</CardTitle>
+          <CardTitle>{modeLabels[mode] || 'Revenue'}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
-                  dataKey="month"
+                  dataKey="label"
                   className="text-xs"
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                 />
                 <YAxis
                   className="text-xs"
@@ -117,20 +118,21 @@ export function RevenueReport({
                   }}
                   formatter={(value: unknown) => [`$${Number(value).toFixed(2)}`, 'Revenue']}
                 />
-                <Bar
+                <Line
+                  type="monotone"
                   dataKey="revenue"
                   name="Revenue"
-                  fill="hsl(142 71% 45%)"
-                  radius={[4, 4, 0, 0]}
-                  opacity={0.8}
+                  stroke="hsl(142 71% 45%)"
+                  strokeWidth={2}
+                  dot={{ r: 4, fill: 'hsl(142 71% 45%)' }}
+                  activeDot={{ r: 6 }}
                 />
-              </BarChart>
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      {/* Revenue per course */}
       <Card>
         <CardHeader>
           <CardTitle>Revenue by Course</CardTitle>
@@ -163,7 +165,6 @@ export function RevenueReport({
         </CardContent>
       </Card>
 
-      {/* Recent orders */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Orders</CardTitle>
@@ -174,6 +175,7 @@ export function RevenueReport({
               <TableRow>
                 <TableHead>Customer</TableHead>
                 <TableHead>Course</TableHead>
+                <TableHead>Org</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
@@ -182,7 +184,7 @@ export function RevenueReport({
             <TableBody>
               {recentOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">No orders yet</TableCell>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">No orders yet</TableCell>
                 </TableRow>
               ) : (
                 recentOrders.map(order => (
@@ -195,6 +197,13 @@ export function RevenueReport({
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{order.courseTitle}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {order.organization ? (
+                        <Badge variant="secondary" className="text-xs capitalize">{order.organization}</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="font-semibold">{formatCents(order.amountCents)}</TableCell>
                     <TableCell>

@@ -11,6 +11,7 @@ const reportTabs = [
   { href: '/supervisor/reports/completions', label: 'Completions' },
   { href: '/supervisor/reports/grading', label: 'Grading' },
   { href: '/supervisor/reports/courses', label: 'Course Analytics' },
+  { href: '/supervisor/reports/weekly-export', label: 'Weekly Report' },
 ]
 
 export default function ReportsLayout({ children }: { children: React.ReactNode }) {

@@ -1,5 +1,20 @@
 import { resend } from './client'
 
+// Organization-specific email recipients
+const FOUNDATION_EMAILS = [
+  'blakester1111@gmail.com',
+  'tomclapp@thefoundingchurch.org',
+  'maddi.arndt@gmail.com',
+  'extcrse_dcf@scientology.net',
+  'erin.gravitt@scientology.net',
+]
+
+const DAY_EMAILS = [
+  'justdust78@yahoo.com',
+  'erin.gravitt@scientology.net',
+  'kirstenspl@gmail.com',
+]
+
 interface SaleNotificationParams {
   courseName: string
   firstName: string
@@ -12,16 +27,27 @@ interface SaleNotificationParams {
   state: string
   zip: string
   paymentMethod: string
+  organization?: string | null
 }
 
-export async function sendSaleNotificationEmail(params: SaleNotificationParams) {
-  const recipients = (process.env.SALE_NOTIFICATION_EMAILS || '')
+function getRecipients(organization: string | null | undefined): string[] {
+  if (organization === 'day') return DAY_EMAILS
+  if (organization === 'foundation') return FOUNDATION_EMAILS
+
+  // "I don't know" or unset: use SALE_NOTIFICATION_EMAILS env var (all recipients)
+  const envRecipients = (process.env.SALE_NOTIFICATION_EMAILS || '')
     .split(',')
     .map((e) => e.trim())
     .filter(Boolean)
 
+  return envRecipients.length > 0 ? envRecipients : [...new Set([...DAY_EMAILS, ...FOUNDATION_EMAILS])]
+}
+
+export async function sendSaleNotificationEmail(params: SaleNotificationParams) {
+  const recipients = getRecipients(params.organization)
+
   if (recipients.length === 0) {
-    console.warn('No SALE_NOTIFICATION_EMAILS configured, skipping sale notification')
+    console.warn('No sale notification email recipients configured, skipping')
     return
   }
 
@@ -37,7 +63,12 @@ export async function sendSaleNotificationEmail(params: SaleNotificationParams) 
     state,
     zip,
     paymentMethod,
+    organization,
   } = params
+
+  const orgLabel = organization === 'day' ? 'Day'
+    : organization === 'foundation' ? 'Foundation'
+    : "I don't know"
 
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
@@ -62,6 +93,10 @@ export async function sendSaleNotificationEmail(params: SaleNotificationParams) 
         <tr>
           <td style="padding: 8px 16px 8px 0; font-weight: bold;">Phone:</td>
           <td style="padding: 8px 0;">${phone || '—'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 16px 8px 0; font-weight: bold;">Organization:</td>
+          <td style="padding: 8px 0;">${orgLabel}</td>
         </tr>
         <tr>
           <td style="padding: 8px 16px 8px 0; font-weight: bold;">Country:</td>

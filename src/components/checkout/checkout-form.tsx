@@ -5,7 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { CreditCard, Loader2 } from 'lucide-react'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { CreditCard, Loader2, Info } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip'
 
 interface CheckoutFormProps {
   courseId: string
@@ -34,6 +41,7 @@ export function CheckoutForm({
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [zip, setZip] = useState('')
+  const [organization, setOrganization] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -42,6 +50,12 @@ export function CheckoutForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    if (!organization) {
+      setError('Please select which organization you are doing this course with.')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -59,6 +73,7 @@ export function CheckoutForm({
           city: city.trim(),
           state: state.trim(),
           zip: zip.trim(),
+          organization,
         }),
       })
 
@@ -205,6 +220,43 @@ export function CheckoutForm({
                 placeholder="US"
               />
             </div>
+          </div>
+
+          {/* Organization Selection */}
+          <div className="space-y-3 border-t pt-4">
+            <Label className="text-base font-semibold">Which organization are you doing this course with? *</Label>
+            <TooltipProvider>
+              <RadioGroup value={organization} onValueChange={setOrganization} className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="day" id="org-day" />
+                  <Label htmlFor="org-day" className="cursor-pointer font-normal">Day</Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-[220px]">
+                      <p>The staff that work Monday through Friday 9-6pm</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="foundation" id="org-foundation" />
+                  <Label htmlFor="org-foundation" className="cursor-pointer font-normal">Foundation</Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-[220px]">
+                      <p>The staff that work evenings and weekends</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="unknown" id="org-unknown" />
+                  <Label htmlFor="org-unknown" className="cursor-pointer font-normal">I don&apos;t know</Label>
+                </div>
+              </RadioGroup>
+            </TooltipProvider>
           </div>
 
           {error && (

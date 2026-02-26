@@ -33,11 +33,17 @@ export async function GET(request: Request) {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, is_deadfiled')
           .eq('id', user.id)
           .single()
 
         if (profile) {
+          // Block deadfiled users from logging in
+          if (profile.is_deadfiled) {
+            await supabase.auth.signOut()
+            return NextResponse.redirect(`${origin}/login?error=account-suspended`)
+          }
+
           const dashboardRole = profile.role === 'super_admin' ? 'admin' : profile.role
           return NextResponse.redirect(`${origin}/${dashboardRole}/dashboard`)
         }

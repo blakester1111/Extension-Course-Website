@@ -3,20 +3,29 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { RevenueReport } from '@/components/reports/revenue-report'
-import { startOfMonth, subMonths, format, endOfMonth } from 'date-fns'
+import { DateRangeSelector } from '@/components/reports/date-range-selector'
+import { getPeriodBuckets, parsePeriodParams } from '@/lib/report-periods'
+import { ReportFilters } from '@/components/reports/report-filters'
+import { resolveOrgDefault } from '@/lib/org-filter'
+import { Suspense } from 'react'
 
 export const metadata = {
   title: 'Revenue Report — FCDC Extension Courses',
 }
 
-export default async function RevenuePage() {
+export default async function RevenuePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>
+}) {
+  const params = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, organization')
     .eq('id', user.id)
     .single()
 
@@ -24,20 +33,54 @@ export default async function RevenuePage() {
     redirect('/login')
   }
 
-  // Get all paid orders
-  const { data: orders } = await supabase
+  // Get timezone
+  const { data: tzSetting } = await supabase
+    .from('site_settings')
+    .select('value')
+    .eq('key', 'timezone')
+    .maybeSingle()
+  const timezone = tzSetting?.value || 'America/New_York'
+
+  const periodParams = { ...parsePeriodParams(params), timezone }
+  const buckets = getPeriodBuckets(periodParams)
+
+  const orgFilter = resolveOrgDefault(params.org, profile?.organization)
+  const audienceFilter = params.audience || 'paid'
+
+  // Get staff emails for audience filtering
+  const { data: staffProfiles } = await supabase
+    .from('profiles')
+    .select('email')
+    .eq('is_staff', true)
+  const staffEmails = new Set((staffProfiles || []).map((p: any) => p.email.toLowerCase()))
+
+  // Get all orders (optionally filtered by org)
+  let ordersQuery = supabase
     .from('orders')
-    .select('id, amount_cents, course_id, status, created_at, customer_first_name, customer_last_name, customer_email')
+    .select('id, amount_cents, course_id, status, created_at, customer_first_name, customer_last_name, customer_email, organization')
     .order('created_at', { ascending: false })
 
-  // Get courses for labeling
+  if (orgFilter === 'day' || orgFilter === 'foundation') {
+    ordersQuery = ordersQuery.eq('organization', orgFilter)
+  } else if (orgFilter === 'unassigned') {
+    ordersQuery = ordersQuery.is('organization', null)
+  }
+
+  const { data: orders } = await ordersQuery
+
   const { data: courses } = await supabase
     .from('courses')
     .select('id, title')
 
   const courseMap = new Map((courses || []).map(c => [c.id, c.title]))
 
-  const paidOrders = (orders || []).filter(o => o.status === 'paid')
+  // Filter by audience (paid vs staff)
+  const filteredOrders = (orders || []).filter(o => {
+    const isStaffOrder = staffEmails.has(o.customer_email.toLowerCase())
+    return audienceFilter === 'staff' ? isStaffOrder : !isStaffOrder
+  })
+
+  const paidOrders = filteredOrders.filter(o => o.status === 'paid')
   const totalRevenue = paidOrders.reduce((sum, o) => sum + o.amount_cents, 0)
   const totalOrders = paidOrders.length
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
@@ -55,26 +98,21 @@ export default async function RevenuePage() {
   const courseRevenue = Array.from(revenuePerCourse.values())
     .sort((a, b) => b.revenue - a.revenue)
 
-  // Monthly revenue (last 12 months)
-  const now = new Date()
-  const monthlyData: { month: string; revenue: number; orders: number }[] = []
-  for (let i = 11; i >= 0; i--) {
-    const monthStart = startOfMonth(subMonths(now, i))
-    const monthEnd = endOfMonth(monthStart)
-    const monthOrders = paidOrders.filter(o => {
+  // Chart data per bucket
+  const chartData = buckets.map(bucket => {
+    const bucketOrders = paidOrders.filter(o => {
       const d = new Date(o.created_at)
-      return d >= monthStart && d <= monthEnd
+      return d >= bucket.start && d <= bucket.end
     })
+    return {
+      label: bucket.label,
+      revenue: bucketOrders.reduce((sum, o) => sum + o.amount_cents, 0) / 100,
+      orders: bucketOrders.length,
+    }
+  })
 
-    monthlyData.push({
-      month: format(monthStart, 'MMM yyyy'),
-      revenue: monthOrders.reduce((sum, o) => sum + o.amount_cents, 0) / 100,
-      orders: monthOrders.length,
-    })
-  }
-
-  // Recent orders
-  const recentOrders = (orders || []).slice(0, 20).map(o => ({
+  // Recent orders (respects audience filter)
+  const recentOrders = filteredOrders.slice(0, 20).map(o => ({
     id: o.id,
     customerName: `${o.customer_first_name} ${o.customer_last_name}`,
     customerEmail: o.customer_email,
@@ -82,16 +120,34 @@ export default async function RevenuePage() {
     amountCents: o.amount_cents,
     status: o.status,
     createdAt: o.created_at,
+    organization: (o as any).organization || null,
   }))
 
   return (
-    <RevenueReport
-      totalRevenue={totalRevenue}
-      totalOrders={totalOrders}
-      avgOrderValue={avgOrderValue}
-      courseRevenue={courseRevenue}
-      monthlyData={monthlyData}
-      recentOrders={recentOrders}
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Revenue Report</h1>
+        <p className="text-muted-foreground">Financial overview of course sales</p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Suspense>
+          <DateRangeSelector />
+        </Suspense>
+        <Suspense>
+          <ReportFilters defaultOrg={orgFilter} />
+        </Suspense>
+      </div>
+
+      <RevenueReport
+        totalRevenue={totalRevenue}
+        totalOrders={totalOrders}
+        avgOrderValue={avgOrderValue}
+        courseRevenue={courseRevenue}
+        chartData={chartData}
+        recentOrders={recentOrders}
+        mode={periodParams.mode}
+      />
+    </div>
   )
 }

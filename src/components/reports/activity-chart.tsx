@@ -2,8 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -12,25 +12,34 @@ import {
   Legend,
 } from 'recharts'
 
-interface WeeklyChartProps {
-  data: { week: string; submitted: number; passed: number }[]
+interface ActivityChartProps {
+  data: { label: string; submitted: number; passed: number }[]
+  mode: string
 }
 
-export function WeeklyChart({ data }: WeeklyChartProps) {
+const modeLabels: Record<string, string> = {
+  thisweek: 'This Week Activity (Thu–Thu)',
+  daily: 'Daily Activity (Last 7 Days)',
+  weekly: 'Weekly Activity (Last 12 Weeks)',
+  monthly: 'Monthly Activity (Last 12 Months)',
+  custom: 'Activity (Custom Range)',
+}
+
+export function ActivityChart({ data, mode }: ActivityChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Weekly Activity (Last 8 Weeks)</CardTitle>
+        <CardTitle>{modeLabels[mode] || 'Activity'}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[350px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+            <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis
-                dataKey="week"
+                dataKey="label"
                 className="text-xs"
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
               />
               <YAxis
                 className="text-xs"
@@ -47,21 +56,27 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
                 labelStyle={{ color: 'hsl(var(--foreground))' }}
               />
               <Legend />
-              <Bar
+              <Line
+                type="monotone"
                 dataKey="submitted"
                 name="Submitted"
-                fill="hsl(var(--primary))"
-                radius={[4, 4, 0, 0]}
-                opacity={0.8}
+                stroke="hsl(221 83% 53%)"
+                strokeWidth={2}
+                dot={{ r: 4, fill: 'hsl(221 83% 53%)' }}
+                activeDot={{ r: 6 }}
+                connectNulls
               />
-              <Bar
+              <Line
+                type="monotone"
                 dataKey="passed"
                 name="Passed"
-                fill="hsl(142 71% 45%)"
-                radius={[4, 4, 0, 0]}
-                opacity={0.8}
+                stroke="hsl(142 71% 45%)"
+                strokeWidth={2}
+                dot={{ r: 4, fill: 'hsl(142 71% 45%)' }}
+                activeDot={{ r: 6 }}
+                connectNulls
               />
-            </BarChart>
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </CardContent>

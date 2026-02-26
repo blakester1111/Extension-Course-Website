@@ -47,7 +47,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Public routes that don't require auth
-  const publicRoutes = ['/', '/catalog', '/calculator', '/how-it-works', '/invite', '/contact', '/copyright', '/privacy', '/terms', '/legal', '/login', '/signup', '/forgot-password', '/callback']
+  const publicRoutes = ['/', '/catalog', '/calculator', '/how-it-works', '/honor-roll', '/invite', '/contact', '/copyright', '/privacy', '/terms', '/legal', '/login', '/signup', '/forgot-password', '/callback']
   const isPublicRoute = publicRoutes.some(route => pathname === route) ||
     pathname.startsWith('/catalog/') ||
     pathname.startsWith('/enroll/') ||
@@ -61,15 +61,21 @@ export async function updateSession(request: NextRequest) {
     return redirectWithCookies(url)
   }
 
-  // If authenticated, check role-based access
+  // If authenticated, check role-based access and deadfile status
   if (user && (pathname.startsWith('/student') || pathname.startsWith('/supervisor') || pathname.startsWith('/admin'))) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, is_deadfiled')
       .eq('id', user.id)
       .single()
 
     if (profile) {
+      // Block deadfiled users — sign them out and redirect to a blocked page
+      if (profile.is_deadfiled) {
+        await supabase.auth.signOut()
+        return redirectWithCookies(new URL('/login?error=account-suspended', request.url))
+      }
+
       const role = profile.role
       const isAdminLike = role === 'admin' || role === 'super_admin'
       const dashboardRole = role === 'super_admin' ? 'admin' : role

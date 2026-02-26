@@ -1,4 +1,5 @@
 export type UserRole = 'student' | 'supervisor' | 'admin' | 'super_admin'
+export type Organization = 'day' | 'foundation'
 export type CourseCategory = 'basics' | 'congresses' | 'accs'
 export type SubmissionStatus = 'draft' | 'submitted' | 'graded_pass' | 'graded_corrections'
 export type EnrollmentStatus = 'active' | 'pending_invoice_verification'
@@ -10,6 +11,8 @@ export interface Profile {
   full_name: string
   role: UserRole
   is_staff: boolean
+  is_deadfiled: boolean
+  organization: Organization | null
   supervisor_id: string | null
   created_at: string
   updated_at: string

@@ -3,54 +3,88 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { InactiveStudentsTable } from '@/components/reports/inactive-students-table'
+import { ReportFilters } from '@/components/reports/report-filters'
+import { filterByOrg, filterByStaff, resolveOrgDefault } from '@/lib/org-filter'
+import { Suspense } from 'react'
 
 export const metadata = {
   title: 'Inactive Students — FCDC Extension Courses',
 }
 
-export default async function InactiveStudentsPage() {
+export default async function InactiveStudentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>
+}) {
+  const params = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, organization')
     .eq('id', user.id)
     .single()
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin'
+  const orgFilter = resolveOrgDefault(params.org, profile?.organization)
 
-  // Get enrolled students
-  let studentsQuery = supabase
-    .from('profiles')
-    .select('id, full_name, email')
-    .eq('role', 'student')
-    .order('full_name', { ascending: true })
+  // Get ALL enrolled users via enrollments table (any role)
+  const { data: enrollmentRows } = await supabase
+    .from('enrollments')
+    .select('student_id, course:courses(title)')
+    .eq('status', 'active')
+
+  let enrolledIds = [...new Set((enrollmentRows || []).map(e => e.student_id))]
 
   if (!isAdmin) {
-    studentsQuery = studentsQuery.eq('supervisor_id', user.id)
+    // Supervisor: filter to assigned students + unassigned
+    const { data: assignedStudents } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('supervisor_id', user.id)
+    const { data: unassignedStudents } = await supabase
+      .from('profiles')
+      .select('id')
+      .is('supervisor_id', null)
+    const visibleIds = new Set([
+      ...(assignedStudents || []).map(s => s.id),
+      ...(unassignedStudents || []).map(s => s.id),
+    ])
+    enrolledIds = enrolledIds.filter(id => visibleIds.has(id))
   }
 
-  const { data: students } = await studentsQuery
-  const studentIds = (students || []).map(s => s.id)
+  // Apply audience and organization filters
+  enrolledIds = await filterByStaff(supabase, enrolledIds, params.audience)
+  enrolledIds = await filterByOrg(supabase, enrolledIds, orgFilter)
 
-  if (studentIds.length === 0) {
+  if (enrolledIds.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        No students found.
+        No enrolled students found.
       </div>
     )
   }
 
-  // Get active enrollments
-  const { data: enrollments } = await supabase
-    .from('enrollments')
-    .select('student_id, course:courses(title)')
-    .eq('status', 'active')
-    .in('student_id', studentIds)
+  // Get profiles for enrolled users
+  const { data: students } = await supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', enrolledIds)
+    .order('full_name', { ascending: true })
 
-  const enrolledStudentIds = new Set((enrollments || []).map(e => e.student_id))
+  const studentIds = (students || []).map(s => s.id)
+
+  // Build course names per student from enrollments
+  const courseNamesMap = new Map<string, string[]>()
+  for (const e of enrollmentRows || []) {
+    if (!studentIds.includes(e.student_id)) continue
+    const list = courseNamesMap.get(e.student_id) || []
+    const title = (e.course as any)?.title
+    if (title) list.push(title)
+    courseNamesMap.set(e.student_id, list)
+  }
 
   // Get most recent submission per student
   const { data: allSubmissions } = await supabase
@@ -67,35 +101,29 @@ export default async function InactiveStudentsPage() {
     }
   }
 
-  // Build course names per student
-  const courseNamesMap = new Map<string, string[]>()
-  for (const e of enrollments || []) {
-    const list = courseNamesMap.get(e.student_id) || []
-    const title = (e.course as any)?.title
-    if (title) list.push(title)
-    courseNamesMap.set(e.student_id, list)
-  }
-
   const now = new Date()
-  const studentData = (students || [])
-    .filter(s => enrolledStudentIds.has(s.id))
-    .map(s => {
-      const lastSub = lastSubmissionMap.get(s.id)
-      const daysSince = lastSub
-        ? Math.floor((now.getTime() - new Date(lastSub).getTime()) / (1000 * 60 * 60 * 24))
-        : null
+  const studentData = (students || []).map(s => {
+    const lastSub = lastSubmissionMap.get(s.id)
+    const daysSince = lastSub
+      ? Math.floor((now.getTime() - new Date(lastSub).getTime()) / (1000 * 60 * 60 * 24))
+      : null
 
-      return {
-        id: s.id,
-        fullName: s.full_name,
-        email: s.email,
-        lastSubmission: lastSub || null,
-        daysSinceLastSubmission: daysSince,
-        courseNames: courseNamesMap.get(s.id) || [],
-      }
-    })
+    return {
+      id: s.id,
+      fullName: s.full_name,
+      email: s.email,
+      lastSubmission: lastSub || null,
+      daysSinceLastSubmission: daysSince,
+      courseNames: courseNamesMap.get(s.id) || [],
+    }
+  })
 
   return (
-    <InactiveStudentsTable students={studentData} />
+    <div className="space-y-6">
+      <Suspense>
+        <ReportFilters defaultOrg={orgFilter} />
+      </Suspense>
+      <InactiveStudentsTable students={studentData} />
+    </div>
   )
 }

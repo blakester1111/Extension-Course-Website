@@ -23,7 +23,7 @@ export default async function AdminLayout({
   return (
     <div className="flex flex-1">
       <Sidebar role={role} />
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1 min-w-0 p-6 overflow-x-auto">{children}</main>
     </div>
   )
 }

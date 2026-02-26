@@ -56,10 +56,36 @@ export default function TermsPage() {
           standards.
         </p>
 
-        <h2 className="text-lg font-semibold text-foreground pt-4">Termination</h2>
+        <h2 className="text-lg font-semibold text-foreground pt-4">Account Standing and Termination</h2>
         <p>
-          FCDC reserves the right to suspend or terminate your access to the platform at any time,
-          with or without cause, and with or without notice.
+          Access to the FCDC Extension Course platform is contingent upon the user remaining in good
+          standing with the Founding Church of Scientology of Washington, D.C. and its affiliated
+          organizations.
+        </p>
+        <p>
+          FCDC reserves the right, at its sole and absolute discretion, to suspend, restrict, or
+          permanently terminate any user&apos;s access to the platform, their student portal, course
+          materials, certificates, and all associated services at any time, with or without cause,
+          and with or without prior notice. This includes, but is not limited to, situations where:
+        </p>
+        <ul className="list-disc list-inside space-y-1 pl-2">
+          <li>The user is determined to no longer be in good standing with the organization.</li>
+          <li>The user has violated any provision of these Terms of Use or applicable policies.</li>
+          <li>The user&apos;s continued access is deemed detrimental to the platform, its community, or the organization&apos;s interests.</li>
+          <li>Any other reason FCDC deems appropriate in its sole judgment.</li>
+        </ul>
+        <p>
+          Upon suspension or termination, the user&apos;s account may be placed into a restricted
+          status (&quot;deadfile&quot;). Users whose accounts are placed in deadfile status will be
+          unable to sign in to the platform and will be removed from all public-facing features
+          including, but not limited to, honor roll leaderboards, hall of fame listings, and any
+          other recognition features. FCDC is under no obligation to provide a reason for
+          such action.
+        </p>
+        <p>
+          Reinstatement of a suspended or terminated account is at the sole discretion of FCDC.
+          Users who believe their account has been suspended in error may contact FCDC at the
+          address listed below to request a review.
         </p>
 
         <h2 className="text-lg font-semibold text-foreground pt-4">Limitation of Liability</h2>

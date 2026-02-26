@@ -2,9 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
+import { SupervisorStudentsList } from '@/components/admin/supervisor-students-list'
 
 export const metadata = {
   title: 'Students — Supervisor',
@@ -28,14 +26,13 @@ export default async function SupervisorStudentsPage() {
   let unassignedStudents: any[] = []
 
   if (isAdmin) {
-    // Admin sees ALL students + enrolled non-students (e.g. admin enrolled in a course)
+    // Admin sees ALL students + enrolled non-students
     const { data: studentsByRole } = await supabase
       .from('profiles')
       .select('*')
       .eq('role', 'student')
       .order('full_name', { ascending: true })
 
-    // Also include non-student users who have enrollments
     const { data: allEnrollmentIds } = await supabase
       .from('enrollments')
       .select('student_id')
@@ -76,11 +73,10 @@ export default async function SupervisorStudentsPage() {
     unassignedStudents = unassigned || []
   }
 
-  // Get enrollment + progress data for all visible students
   const allStudents = [...assignedStudents, ...unassignedStudents]
 
   // Fetch supervisor names for admin view
-  let supervisorNames = new Map<string, string>()
+  const supervisorNames = new Map<string, string>()
   if (isAdmin) {
     const supervisorIds = [...new Set(assignedStudents.map(s => s.supervisor_id).filter(Boolean))]
     if (supervisorIds.length > 0) {
@@ -114,7 +110,13 @@ export default async function SupervisorStudentsPage() {
         .eq('status', 'submitted')
 
       return {
-        ...student,
+        id: student.id,
+        full_name: student.full_name,
+        email: student.email,
+        role: student.role,
+        organization: student.organization || null,
+        is_staff: student.is_staff ?? false,
+        created_at: student.created_at,
         enrolledCourses: enrollments?.length || 0,
         completedLessons: completedLessons || 0,
         pendingSubmissions: pendingSubmissions || 0,
@@ -124,91 +126,17 @@ export default async function SupervisorStudentsPage() {
     })
   )
 
-  const assigned = studentProgress.filter(s => s.isAssigned)
-  const unassigned = studentProgress.filter(s => !s.isAssigned)
-
-  function StudentTable({ students, emptyMessage, showSupervisor }: { students: typeof studentProgress; emptyMessage: string; showSupervisor?: boolean }) {
-    if (students.length === 0) {
-      return <p className="text-center text-muted-foreground py-8">{emptyMessage}</p>
-    }
-
-    return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            {showSupervisor && <TableHead>Supervisor</TableHead>}
-            <TableHead>Staff</TableHead>
-            <TableHead>Courses</TableHead>
-            <TableHead>Completed</TableHead>
-            <TableHead>Pending</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {students.map((student) => (
-            <TableRow key={student.id}>
-              <TableCell className="font-medium">
-                {student.full_name}
-                {student.role !== 'student' && (
-                  <Badge variant="outline" className="ml-2 text-xs capitalize">
-                    {student.role === 'super_admin' ? 'Super Admin' : student.role}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>{student.email}</TableCell>
-              {showSupervisor && (
-                <TableCell className="text-muted-foreground">
-                  {student.supervisorName || '—'}
-                </TableCell>
-              )}
-              <TableCell>
-                {student.is_staff && <Badge variant="outline" className="text-xs">Staff</Badge>}
-              </TableCell>
-              <TableCell>{student.enrolledCourses}</TableCell>
-              <TableCell>
-                <Badge variant="secondary">{student.completedLessons} lessons</Badge>
-              </TableCell>
-              <TableCell>
-                {student.pendingSubmissions > 0 ? (
-                  <Badge>{student.pendingSubmissions} awaiting</Badge>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    )
-  }
+  const assignedCount = studentProgress.filter(s => s.isAssigned).length
+  const unassignedCount = studentProgress.filter(s => !s.isAssigned).length
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{isAdmin ? 'All Students' : 'My Students'}</h1>
-        <p className="text-muted-foreground">{assigned.length} assigned, {unassigned.length} unassigned</p>
+        <p className="text-muted-foreground">{assignedCount} assigned, {unassignedCount} unassigned</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{isAdmin ? 'Assigned Students' : 'My Students'}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <StudentTable students={assigned} emptyMessage="No students assigned yet" showSupervisor={isAdmin} />
-        </CardContent>
-      </Card>
-
-      {unassigned.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Unassigned Students</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <StudentTable students={unassigned} emptyMessage="No unassigned students" />
-          </CardContent>
-        </Card>
-      )}
+      <SupervisorStudentsList students={studentProgress} isAdmin={isAdmin} />
     </div>
   )
 }

@@ -70,11 +70,15 @@ export async function POST(req: NextRequest) {
       .eq('id', courseId)
       .single()
 
+    // Determine organization from metadata
+    const orgRaw = metadata.organization || ''
+    const orgValue = orgRaw === 'day' || orgRaw === 'foundation' ? orgRaw : null
+
     // Try to find existing user by email and enroll them
     if (order) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, organization')
         .eq('email', order.customer_email)
         .maybeSingle()
 
@@ -84,6 +88,14 @@ export async function POST(req: NextRequest) {
           .from('orders')
           .update({ student_id: profile.id })
           .eq('id', orderId)
+
+        // Set organization on profile if not already set or if user selected one
+        if (orgValue && !profile.organization) {
+          await supabase
+            .from('profiles')
+            .update({ organization: orgValue })
+            .eq('id', profile.id)
+        }
 
         // Check if already enrolled
         const { data: existing } = await supabase
@@ -127,7 +139,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Send sale notification email to staff
+      // Send sale notification email to staff (routed by organization)
       if (course && order) {
         await sendSaleNotificationEmail({
           courseName: course.title,
@@ -141,6 +153,7 @@ export async function POST(req: NextRequest) {
           state: order.customer_state || '',
           zip: order.customer_zip || '',
           paymentMethod: 'Credit Card',
+          organization: orgValue,
         })
       }
     }

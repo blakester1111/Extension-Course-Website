@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { sendNotificationEmail } from '@/lib/resend/send-notification'
+import { checkAndCreateCertificate } from '@/lib/certificates'
 
 async function requireSupervisor() {
   const supabase = await createClient()
@@ -125,8 +126,14 @@ export async function gradeSubmission(
         link: `/student/courses/${courseId}`,
       })
     }
+
+    // If this lesson passed, check if the entire course is now complete
+    if (status === 'graded_pass' && courseId) {
+      await checkAndCreateCertificate(supabase, submission.student_id, courseId)
+    }
   }
 
   revalidatePath('/supervisor/queue')
+  revalidatePath('/admin/certificates')
   redirect('/supervisor/queue')
 }

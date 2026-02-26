@@ -18,6 +18,9 @@ import {
   Shield,
   BarChart3,
   DollarSign,
+  Settings,
+  Award,
+  UserX,
 } from 'lucide-react'
 import {
   Tooltip,
@@ -33,6 +36,7 @@ interface SidebarLink {
 
 const studentLinks: SidebarLink[] = [
   { href: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/student/certificates', label: 'Certificates', icon: Award },
   { href: '/student/honor-roll', label: 'Honor Roll', icon: Trophy },
   { href: '/student/notifications', label: 'Notifications', icon: Bell },
   { href: '/student/profile', label: 'Profile', icon: User },
@@ -40,6 +44,8 @@ const studentLinks: SidebarLink[] = [
 
 const myLearningLinks: SidebarLink[] = [
   { href: '/student/dashboard', label: 'My Courses', icon: BookOpen },
+  { href: '/student/certificates', label: 'My Certificates', icon: Award },
+  { href: '/student/honor-roll', label: 'Honor Roll', icon: Trophy },
   { href: '/student/notifications', label: 'My Notifications', icon: Bell },
   { href: '/student/profile', label: 'My Profile', icon: User },
 ]
@@ -61,6 +67,9 @@ const adminLinks: SidebarLink[] = [
   { href: '/supervisor/students', label: 'All Students Progress', icon: FileText },
   { href: '/supervisor/reports', label: 'Reports', icon: BarChart3 },
   { href: '/admin/reports/revenue', label: 'Revenue', icon: DollarSign },
+  { href: '/admin/certificates', label: 'Certificates', icon: Award },
+  { href: '/admin/deadfile', label: 'Deadfile', icon: UserX },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 
 const superAdminLinks: SidebarLink[] = [
@@ -122,7 +131,7 @@ export function Sidebar({ role }: { role: UserRole }) {
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
       className={cn(
-        'hidden md:flex flex-col border-r bg-background transition-all duration-200 ease-in-out',
+        'hidden md:flex flex-col flex-shrink-0 border-r bg-background transition-all duration-200 ease-in-out',
         expanded ? 'w-56' : 'w-12'
       )}
     >

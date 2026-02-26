@@ -14,7 +14,14 @@ export async function GET(request: NextRequest) {
   const now = new Date()
   const currentWeek = getISOWeek(now)
 
-  // Reset streaks for students who missed the previous week
+  // Reset streaks for students who missed the previous week (skip deadfiled users)
+  const { data: deadfiledIds } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('is_deadfiled', true)
+
+  const deadfiledSet = new Set((deadfiledIds || []).map((p: any) => p.id))
+
   const { data: streaks } = await supabase
     .from('honor_roll_streaks')
     .select('*')
@@ -23,6 +30,9 @@ export async function GET(request: NextRequest) {
   let resetCount = 0
 
   for (const streak of streaks || []) {
+    // Skip deadfiled users — their streaks were already zeroed on deadfile
+    if (deadfiledSet.has(streak.student_id)) continue
+
     if (streak.last_submission_week && streak.last_submission_week < currentWeek) {
       // Check if the gap is more than 1 week
       const lastWeekDate = parseISOWeek(streak.last_submission_week)

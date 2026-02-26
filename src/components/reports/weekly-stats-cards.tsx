@@ -4,14 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileText, Users, CheckCircle, GraduationCap, TrendingUp, TrendingDown } from 'lucide-react'
 
 interface WeeklyStatsCardsProps {
-  submittedThisWeek: number
-  submittedLastWeek: number
-  activeThisWeek: number
-  activeLastWeek: number
-  passedThisWeek: number
-  passedLastWeek: number
-  completionsThisWeek: number
-  completionsLastWeek: number
+  submittedCurrent: number
+  submittedPrev: number
+  activeCurrent: number
+  activePrev: number
+  passedCurrent: number
+  passedPrev: number
+  completionsCurrent: number
+  completionsPrev: number
+  comparisonLabel: string
+  periodLabel: string
 }
 
 function getTrend(current: number, previous: number) {
@@ -23,35 +25,39 @@ function getTrend(current: number, previous: number) {
   }
 }
 
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 export function WeeklyStatsCards(props: WeeklyStatsCardsProps) {
   const stats = [
     {
-      label: 'Submissions This Week',
-      value: props.submittedThisWeek,
+      label: `Submissions`,
+      value: props.submittedCurrent,
       icon: FileText,
-      trend: getTrend(props.submittedThisWeek, props.submittedLastWeek),
-      description: 'Lessons submitted by students',
+      trend: getTrend(props.submittedCurrent, props.submittedPrev),
+      description: `Lessons submitted ${props.periodLabel}`,
     },
     {
-      label: 'Active Students',
-      value: props.activeThisWeek,
+      label: `Active Students`,
+      value: props.activeCurrent,
       icon: Users,
-      trend: getTrend(props.activeThisWeek, props.activeLastWeek),
-      description: 'Students who submitted this week',
+      trend: getTrend(props.activeCurrent, props.activePrev),
+      description: `Students who submitted ${props.periodLabel}`,
     },
     {
-      label: 'Lessons Passed',
-      value: props.passedThisWeek,
+      label: `Lessons Passed`,
+      value: props.passedCurrent,
       icon: CheckCircle,
-      trend: getTrend(props.passedThisWeek, props.passedLastWeek),
-      description: 'Lessons graded as passed',
+      trend: getTrend(props.passedCurrent, props.passedPrev),
+      description: `Graded as passed ${props.periodLabel}`,
     },
     {
-      label: 'Course Completions',
-      value: props.completionsThisWeek,
+      label: `Course Completions`,
+      value: props.completionsCurrent,
       icon: GraduationCap,
-      trend: getTrend(props.completionsThisWeek, props.completionsLastWeek),
-      description: 'Courses fully completed',
+      trend: getTrend(props.completionsCurrent, props.completionsPrev),
+      description: `Courses fully completed ${props.periodLabel}`,
     },
   ]
 
@@ -67,24 +73,26 @@ export function WeeklyStatsCards(props: WeeklyStatsCardsProps) {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stat.value}</div>
-              <div className="flex items-center gap-1 mt-1">
-                {stat.trend.direction === 'up' && (
-                  <>
-                    <TrendingUp className="h-3 w-3 text-green-600" />
-                    <span className="text-xs text-green-600">+{stat.trend.pct}%</span>
-                  </>
-                )}
-                {stat.trend.direction === 'down' && (
-                  <>
-                    <TrendingDown className="h-3 w-3 text-red-500" />
-                    <span className="text-xs text-red-500">-{stat.trend.pct}%</span>
-                  </>
-                )}
-                {stat.trend.direction === 'neutral' && (
-                  <span className="text-xs text-muted-foreground">No change</span>
-                )}
-                <span className="text-xs text-muted-foreground ml-1">vs last week</span>
-              </div>
+              {props.comparisonLabel && (
+                <div className="flex items-center gap-1 mt-1">
+                  {stat.trend.direction === 'up' && (
+                    <>
+                      <TrendingUp className="h-3 w-3 text-green-600" />
+                      <span className="text-xs text-green-600">+{stat.trend.pct}%</span>
+                    </>
+                  )}
+                  {stat.trend.direction === 'down' && (
+                    <>
+                      <TrendingDown className="h-3 w-3 text-red-500" />
+                      <span className="text-xs text-red-500">-{stat.trend.pct}%</span>
+                    </>
+                  )}
+                  {stat.trend.direction === 'neutral' && (
+                    <span className="text-xs text-muted-foreground">No change</span>
+                  )}
+                  <span className="text-xs text-muted-foreground ml-1">{props.comparisonLabel}</span>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
             </CardContent>
           </Card>

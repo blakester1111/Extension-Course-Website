@@ -13,6 +13,7 @@ interface StudentEnrollment {
   courseTitle: string
   lessonCount: number
   passedCount: number
+  passedLessonSortOrders?: number[]
 }
 
 interface StudentProgress {
@@ -22,6 +23,7 @@ interface StudentProgress {
   enrollments: StudentEnrollment[]
   totalLessons: number
   totalPassed: number
+  lessonsRemaining: number
   completionPercent: number
   lastSubmission: string | null
 }
@@ -31,7 +33,7 @@ interface ProgressBoardProps {
   courses: { id: string; title: string; lesson_count: number }[]
 }
 
-type SortOption = 'name-asc' | 'progress-desc' | 'progress-asc' | 'recent'
+type SortOption = 'name-asc' | 'progress-desc' | 'progress-asc' | 'closest-to-finish' | 'recent'
 
 export function ProgressBoard({ students, courses }: ProgressBoardProps) {
   const [courseFilter, setCourseFilter] = useState('all')
@@ -77,6 +79,11 @@ export function ProgressBoard({ students, courses }: ProgressBoardProps) {
         return b.completionPercent - a.completionPercent
       case 'progress-asc':
         return a.completionPercent - b.completionPercent
+      case 'closest-to-finish':
+        // Fewest remaining lessons first (exclude 0 remaining = already done, push to end)
+        const aRemaining = a.lessonsRemaining === 0 ? Infinity : a.lessonsRemaining
+        const bRemaining = b.lessonsRemaining === 0 ? Infinity : b.lessonsRemaining
+        return aRemaining - bRemaining
       case 'recent':
         if (!a.lastSubmission && !b.lastSubmission) return 0
         if (!a.lastSubmission) return 1
@@ -120,8 +127,9 @@ export function ProgressBoard({ students, courses }: ProgressBoardProps) {
               <SelectContent>
                 <SelectItem value="progress-desc">Most Progress</SelectItem>
                 <SelectItem value="progress-asc">Least Progress</SelectItem>
+                <SelectItem value="closest-to-finish">Closest to Finishing</SelectItem>
+                <SelectItem value="recent">Most Recently Active</SelectItem>
                 <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-                <SelectItem value="recent">Most Recent</SelectItem>
               </SelectContent>
             </Select>
           </div>
