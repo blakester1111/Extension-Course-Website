@@ -138,8 +138,7 @@ export function ProgressGrid({ students, courses }: ProgressGridProps) {
                         {student.fullName}
                       </td>
                       {lessonHeaders.map(num => {
-                        const sortOrder = num - 1
-                        const isPassed = passedSet.has(sortOrder)
+                        const isPassed = passedSet.has(num)
                         return (
                           <td key={num} className="px-1 py-2 text-center">
                             <div
