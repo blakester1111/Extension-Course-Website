@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 
 export function ProfileForm({ profile, supervisorName }: { profile: Profile; supervisorName: string | null }) {
   const [fullName, setFullName] = useState(profile.full_name)
+  const [certPref, setCertPref] = useState(profile.cert_mail_preference || 'digital')
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
   const router = useRouter()
@@ -20,7 +21,7 @@ export function ProfileForm({ profile, supervisorName }: { profile: Profile; sup
     setSaving(true)
     const { error } = await supabase
       .from('profiles')
-      .update({ full_name: fullName })
+      .update({ full_name: fullName, cert_mail_preference: certPref })
       .eq('id', profile.id)
 
     if (error) {
@@ -63,6 +64,49 @@ export function ProfileForm({ profile, supervisorName }: { profile: Profile; sup
           )}
           <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Certificate Preferences</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Certificate Delivery</Label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="certPref"
+                  value="digital"
+                  checked={certPref === 'digital'}
+                  onChange={() => setCertPref('digital')}
+                  className="accent-primary"
+                />
+                <span className="text-sm">Digital only — I will view and print my certificates online</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="certPref"
+                  value="mail"
+                  checked={certPref === 'mail'}
+                  onChange={() => setCertPref('mail')}
+                  className="accent-primary"
+                />
+                <span className="text-sm">Mail me a physical certificate</span>
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {certPref === 'mail'
+                ? 'A printed certificate will be mailed to you after each course completion.'
+                : 'You can view and print certificates from the My Certificates page at any time.'}
+            </p>
+          </div>
+          <Button onClick={handleSave} disabled={saving} variant="outline" size="sm">
+            {saving ? 'Saving...' : 'Save Preference'}
           </Button>
         </CardContent>
       </Card>

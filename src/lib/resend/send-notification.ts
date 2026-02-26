@@ -5,12 +5,13 @@ interface NotificationEmailParams {
   subject: string
   text: string
   link?: string
+  buttonText?: string
 }
 
-export async function sendNotificationEmail({ to, subject, text, link }: NotificationEmailParams) {
+export async function sendNotificationEmail({ to, subject, text, link, buttonText }: NotificationEmailParams) {
   try {
     const linkHtml = link
-      ? `<p style="margin-top: 16px;"><a href="${process.env.NEXT_PUBLIC_APP_URL}${link}" style="background-color: #171717; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">View Details</a></p>`
+      ? `<p style="margin-top: 16px;"><a href="${process.env.NEXT_PUBLIC_APP_URL}${link}" style="background-color: #171717; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">${buttonText || 'View Details'}</a></p>`
       : ''
 
     await resend.emails.send({

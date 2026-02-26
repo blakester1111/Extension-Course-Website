@@ -2,6 +2,9 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Settings } from 'lucide-react'
 import { CertificateQueue } from '@/components/admin/certificate-queue'
 
 export const metadata = {
@@ -30,7 +33,7 @@ export default async function CertificatesPage() {
     .from('certificates')
     .select(`
       id, status, certificate_number, is_backentered, attested_at, sealed_at, issued_at, created_at,
-      student:profiles!certificates_student_id_fkey(full_name, email),
+      student:profiles!certificates_student_id_fkey(full_name, email, cert_mail_preference),
       course:courses(title),
       attester:profiles!certificates_attested_by_fkey(full_name),
       sealer:profiles!certificates_sealed_by_fkey(full_name)
@@ -44,6 +47,7 @@ export default async function CertificatesPage() {
     isBackentered: c.is_backentered || false,
     studentName: c.student?.full_name || 'Unknown',
     studentEmail: c.student?.email || '',
+    wantsMail: c.student?.cert_mail_preference === 'mail',
     courseTitle: c.course?.title || 'Unknown',
     attesterName: c.attester?.full_name || null,
     attestedAt: c.attested_at,
@@ -55,9 +59,19 @@ export default async function CertificatesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Certificates</h1>
-        <p className="text-muted-foreground">Attest course completions and issue certificates</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Certificates</h1>
+          <p className="text-muted-foreground">Attest course completions and issue certificates</p>
+        </div>
+        {isAdmin && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/admin/certificates/settings">
+              <Settings className="h-4 w-4 mr-1.5" />
+              Signatures & Seal
+            </Link>
+          </Button>
+        )}
       </div>
 
       <CertificateQueue

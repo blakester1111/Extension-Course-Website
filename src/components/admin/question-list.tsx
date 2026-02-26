@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createQuestion, deleteQuestion, updateQuestion, toggleQuestionRequiresImage } from '@/app/(dashboard)/admin/courses/[id]/lessons/actions'
 import type { Question } from '@/types/database'
 import { Trash2, Plus, Save, ImageIcon } from 'lucide-react'
+import { FormattedText } from '@/components/ui/formatted-text'
 
 interface QuestionListProps {
   lessonId: string
@@ -85,6 +86,7 @@ export function QuestionList({ lessonId, courseId, questions: initialQuestions, 
                   onChange={(e) => setEditText(e.target.value)}
                   rows={2}
                 />
+                <p className="text-xs text-muted-foreground">Use *asterisks* around text for <em>italics</em></p>
                 <div className="flex gap-1">
                   <Button size="sm" onClick={() => handleUpdate(q.id, q.sort_order)}>
                     <Save className="h-3 w-3 mr-1" />
@@ -104,7 +106,7 @@ export function QuestionList({ lessonId, courseId, questions: initialQuestions, 
                     setEditText(q.question_text)
                   }}
                 >
-                  {q.question_text}
+                  <FormattedText text={q.question_text} />
                 </p>
                 <Button
                   variant="ghost"
@@ -136,7 +138,7 @@ export function QuestionList({ lessonId, courseId, questions: initialQuestions, 
 
         <div className="space-y-2 border-t pt-4">
           <Textarea
-            placeholder="New question text..."
+            placeholder="New question text... (use *asterisks* for italics)"
             value={newQuestion}
             onChange={(e) => setNewQuestion(e.target.value)}
             rows={2}

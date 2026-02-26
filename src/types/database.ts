@@ -5,6 +5,8 @@ export type SubmissionStatus = 'draft' | 'submitted' | 'graded_pass' | 'graded_c
 export type EnrollmentStatus = 'active' | 'pending_invoice_verification'
 export type NotificationType = 'lesson_graded' | 'lesson_submitted' | 'enrollment_confirmed' | 'corrections_needed' | 'invoice_pending' | 'invoice_verified' | 'nudge'
 
+export type CertMailPreference = 'digital' | 'mail'
+
 export interface Profile {
   id: string
   email: string
@@ -14,6 +16,7 @@ export interface Profile {
   is_deadfiled: boolean
   organization: Organization | null
   supervisor_id: string | null
+  cert_mail_preference: CertMailPreference
   created_at: string
   updated_at: string
 }

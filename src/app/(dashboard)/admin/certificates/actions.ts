@@ -37,25 +37,6 @@ export async function updateCertPermissions(
   return { success: true }
 }
 
-/** Generate a unique certificate number: DC-XXXX */
-async function generateCertNumber(supabase: any): Promise<string> {
-  // Get the highest existing cert number
-  const { data } = await supabase
-    .from('certificates')
-    .select('certificate_number')
-    .not('certificate_number', 'is', null)
-    .order('certificate_number', { ascending: false })
-    .limit(1)
-
-  let nextNum = 1
-  if (data && data.length > 0 && data[0].certificate_number) {
-    const match = data[0].certificate_number.match(/DC-(\d+)/)
-    if (match) nextNum = parseInt(match[1], 10) + 1
-  }
-
-  return `DC-${String(nextNum).padStart(4, '0')}`
-}
-
 /** Create a certificate record when a course is fully completed */
 export async function createCertificate(studentId: string, courseId: string) {
   const { supabase } = await requireAdmin()
@@ -84,11 +65,27 @@ export async function createCertificate(studentId: string, courseId: string) {
 }
 
 /** Certs & Awards user attests that the course was completed fully and honestly */
-export async function attestCertificate(certificateId: string) {
+export async function attestCertificate(certificateId: string, certificateNumber: string) {
   const { supabase, user, profile } = await requireAuth()
 
   if (!profile.can_attest_certs && !['admin', 'super_admin'].includes(profile.role)) {
     return { error: 'You do not have Certificates & Awards permission' }
+  }
+
+  if (!certificateNumber.trim()) {
+    return { error: 'Certificate number is required' }
+  }
+
+  // Check for duplicate certificate number
+  const { data: existing } = await supabase
+    .from('certificates')
+    .select('id')
+    .eq('certificate_number', certificateNumber.trim())
+    .neq('id', certificateId)
+    .maybeSingle()
+
+  if (existing) {
+    return { error: `Certificate number "${certificateNumber.trim()}" is already in use` }
   }
 
   const { error } = await supabase
@@ -97,6 +94,7 @@ export async function attestCertificate(certificateId: string) {
       status: 'pending_seal',
       attested_by: user.id,
       attested_at: new Date().toISOString(),
+      certificate_number: certificateNumber.trim(),
     })
     .eq('id', certificateId)
     .eq('status', 'pending_attestation')
@@ -114,8 +112,6 @@ export async function sealCertificate(certificateId: string) {
     return { error: 'You do not have Keeper of Seals permission' }
   }
 
-  const certNumber = await generateCertNumber(supabase)
-
   const { error } = await supabase
     .from('certificates')
     .update({
@@ -123,7 +119,6 @@ export async function sealCertificate(certificateId: string) {
       sealed_by: user.id,
       sealed_at: new Date().toISOString(),
       issued_at: new Date().toISOString(),
-      certificate_number: certNumber,
     })
     .eq('id', certificateId)
     .eq('status', 'pending_seal')

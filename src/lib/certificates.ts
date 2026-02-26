@@ -27,7 +27,7 @@ export async function checkAndCreateCertificate(
     .eq('course_id', courseId)
     .maybeSingle()
 
-  if (existingCert) return // Already has a certificate record
+  if (existingCert) return false // Already has a certificate record
 
   // Count total lessons in the course
   const { count: totalLessons } = await supabase
@@ -35,7 +35,7 @@ export async function checkAndCreateCertificate(
     .select('id', { count: 'exact', head: true })
     .eq('course_id', courseId)
 
-  if (!totalLessons || totalLessons === 0) return
+  if (!totalLessons || totalLessons === 0) return false
 
   // Count passed submissions for this student in this course
   const { data: lessonIds } = await supabase
@@ -50,7 +50,7 @@ export async function checkAndCreateCertificate(
     .eq('status', 'graded_pass')
     .in('lesson_id', (lessonIds || []).map(l => l.id))
 
-  if ((passedCount || 0) < totalLessons) return
+  if ((passedCount || 0) < totalLessons) return false
 
   // All lessons passed — create certificate
   if (options?.backentered) {
@@ -69,6 +69,7 @@ export async function checkAndCreateCertificate(
         certificate_number: options.certificateNumber?.trim() || null,
         issued_at: issuedAt,
       })
+    return true
   } else {
     // Normal completion: enter attestation workflow
     await supabase
@@ -78,5 +79,6 @@ export async function checkAndCreateCertificate(
         course_id: courseId,
         status: 'pending_attestation',
       })
+    return true
   }
 }

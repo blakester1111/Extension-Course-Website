@@ -88,32 +88,34 @@ export async function submitLesson(submissionId: string) {
     .select('id, requires_image')
     .eq('lesson_id', submission.lesson_id)
 
+  const imageQuestionIds = new Set((questions || []).filter(q => q.requires_image).map(q => q.id))
+
   if (submission.status === 'graded_corrections') {
-    // For resubmissions, validate that incorrect answers have been revised (non-empty)
+    // For resubmissions, validate that incorrect answers have been revised
     const incorrectAnswers = (answers || []).filter(a => a.needs_correction)
-    const emptyIncorrect = incorrectAnswers.filter(a => !a.answer_text.trim())
+    const emptyIncorrect = incorrectAnswers.filter(a => {
+      // Image questions only require the image, text is optional
+      if (imageQuestionIds.has(a.question_id)) return !a.image_path
+      return !a.answer_text.trim()
+    })
     if (emptyIncorrect.length > 0) {
       return { error: 'Please revise all incorrect answers before resubmitting' }
-    }
-
-    // Validate images for incorrect answers that require them
-    const imageQuestionIds = new Set((questions || []).filter(q => q.requires_image).map(q => q.id))
-    const missingImages = incorrectAnswers.filter(a => imageQuestionIds.has(a.question_id) && !a.image_path)
-    if (missingImages.length > 0) {
-      return { error: 'Please upload a diagram/drawing for all required questions before resubmitting' }
     }
   } else {
     // For first submission, validate all questions answered
     const answeredIds = new Set((answers || []).map(a => a.question_id))
-    const unanswered = (questions || []).filter(q => !answeredIds.has(q.id) || answers?.find(a => a.question_id === q.id && !a.answer_text.trim()))
 
-    if (unanswered.length > 0) {
+    // Text questions: require non-empty answer_text
+    const unansweredText = (questions || []).filter(q =>
+      !q.requires_image && (!answeredIds.has(q.id) || answers?.find(a => a.question_id === q.id && !a.answer_text.trim()))
+    )
+    if (unansweredText.length > 0) {
       return { error: 'Please answer all questions before submitting' }
     }
 
-    // Validate images for questions that require them
-    const imageQuestions = (questions || []).filter(q => q.requires_image)
-    const missingImages = imageQuestions.filter(q => {
+    // Image questions: require an uploaded image (text is optional)
+    const missingImages = (questions || []).filter(q => {
+      if (!q.requires_image) return false
       const answer = (answers || []).find(a => a.question_id === q.id)
       return !answer?.image_path
     })

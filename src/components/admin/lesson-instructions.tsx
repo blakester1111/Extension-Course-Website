@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { updateLessonInstructions } from '@/app/(dashboard)/admin/courses/[id]/lessons/actions'
 import { Save, X } from 'lucide-react'
+import { FormattedText } from '@/components/ui/formatted-text'
 
 interface LessonInstructionsProps {
   lessonId: string
@@ -58,9 +59,16 @@ export function LessonInstructions({ lessonId, courseId, initialInstructions }: 
         <Textarea
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
-          placeholder="e.g., Read Chapter 1 of Dianetics: The Modern Science of Mental Health..."
+          placeholder="e.g., Read *Chapter 1* of Dianetics: The Modern Science of Mental Health..."
           rows={5}
         />
+        <p className="text-xs text-muted-foreground">Use *asterisks* around text for <em>italics</em> (e.g. lecture or article titles)</p>
+        {instructions && instructions.includes('*') && (
+          <div className="bg-muted/50 border rounded-md p-3">
+            <p className="text-xs font-medium text-muted-foreground mb-1">Preview</p>
+            <p className="text-sm whitespace-pre-line"><FormattedText text={instructions} /></p>
+          </div>
+        )}
 
         <div className="flex items-center gap-2">
           <Button onClick={handleSave} size="sm" disabled={saving || !hasChanges}>

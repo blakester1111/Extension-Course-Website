@@ -9,6 +9,7 @@ import { gradeSubmission } from '@/app/(dashboard)/supervisor/grade/actions'
 import type { LessonSubmission, Answer } from '@/types/database'
 import { toast } from 'sonner'
 import { CheckCircle, XCircle, Lock, MessageSquare, Send, ZoomIn } from 'lucide-react'
+import { FormattedText } from '@/components/ui/formatted-text'
 
 interface AnswerWithQuestion extends Answer {
   question?: { question_text: string; sort_order: number; requires_image?: boolean }
@@ -97,7 +98,7 @@ export function GradingForm({ submission, answers, totalQuestions, questionOffse
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <span className="text-muted-foreground font-mono text-sm">{questionOffset + index + 1}.</span>
-                  <span className="flex-1">{answer.question?.question_text}</span>
+                  <span className="flex-1">{answer.question?.question_text && <FormattedText text={answer.question.question_text} />}</span>
                   <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 shrink-0">
                     <Lock className="h-3 w-3 mr-1" />
                     Correct
@@ -138,7 +139,7 @@ export function GradingForm({ submission, answers, totalQuestions, questionOffse
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <span className="text-muted-foreground font-mono text-sm">{questionOffset + index + 1}.</span>
-                <span className="flex-1">{answer.question?.question_text}</span>
+                <span className="flex-1">{answer.question?.question_text && <FormattedText text={answer.question.question_text} />}</span>
                 {isAlreadyGraded && (
                   answer.needs_correction
                     ? <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 shrink-0">Incorrect</Badge>

@@ -12,6 +12,9 @@ interface CertificateTemplateProps {
   issuedAt: string
   certificateNumber: string
   isBackentered?: boolean
+  sealImageUrl?: string | null
+  attesterSignatureUrl?: string | null
+  sealerSignatureUrl?: string | null
 }
 
 export function CertificateTemplate({
@@ -22,43 +25,36 @@ export function CertificateTemplate({
   issuedAt,
   certificateNumber,
   isBackentered,
+  sealImageUrl,
+  attesterSignatureUrl,
+  sealerSignatureUrl,
 }: CertificateTemplateProps) {
   const certRef = useRef<HTMLDivElement>(null)
-
   function handlePrint() {
     const content = certRef.current
     if (!content) return
-
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Certificate - ${studentName}</title>
-        <style>
-          @page { size: landscape; margin: 0; }
-          body { margin: 0; padding: 0; }
-          ${getCertStyles()}
-        </style>
-      </head>
-      <body>
-        ${content.outerHTML}
-      </body>
-      </html>
-    `)
+    printWindow.document.write(`<!DOCTYPE html><html><head>
+      <title>Certificate - ${studentName}</title>
+      <style>@page{size:landscape;margin:0}body{margin:0;padding:0}${getCertCSS()}</style>
+      </head><body>${content.outerHTML}</body></html>`)
     printWindow.document.close()
-    printWindow.onload = () => {
-      printWindow.print()
-    }
+    printWindow.onload = () => printWindow.print()
   }
 
   const formattedDate = new Date(issuedAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    year: 'numeric', month: 'long', day: 'numeric',
   })
+
+  // Split course title at colon for two-line display
+  const colonIdx = courseTitle.indexOf(':')
+  let line1 = courseTitle.toUpperCase()
+  let line2: string | null = null
+  if (colonIdx > 0) {
+    line1 = courseTitle.substring(0, colonIdx).trim().toUpperCase()
+    line2 = courseTitle.substring(colonIdx + 1).trim().toUpperCase()
+  }
 
   return (
     <div className="space-y-4">
@@ -69,95 +65,105 @@ export function CertificateTemplate({
         </Button>
       </div>
 
-      <div className="overflow-auto border rounded-lg bg-white p-4">
-        <div ref={certRef} className="cert-page">
-          {/* Top text */}
-          <div className="cert-top-text">GOLDEN AGE OF KNOWLEDGE</div>
+      {/* Inject styles for in-page preview */}
+      <style dangerouslySetInnerHTML={{ __html: getCertCSS() }} />
 
-          {/* Gold line */}
-          <div className="cert-gold-line" />
+      <div className="overflow-auto border rounded-lg bg-white p-2 sm:p-4">
+        <div ref={certRef} className="cp">
+          <div className="cb">
+            {/* Top header */}
+            <div className="ct-top">Golden Age of Knowledge</div>
+            <div className="ct-rule" />
 
-          {/* Seal/Crest placeholder */}
-          <div className="cert-seal">
-            <div className="cert-seal-inner">
-              <div className="cert-seal-text-top">GOLDEN AGE</div>
-              <div className="cert-seal-icon">&#9878;</div>
-              <div className="cert-seal-text-bottom">KNOWLEDGE</div>
-            </div>
-          </div>
-
-          {/* Organization */}
-          <div className="cert-org">
-            <div className="cert-org-name">Church of Scientology</div>
-            <div className="cert-org-dept">Qualifications Division, Department of Validity</div>
-          </div>
-
-          {/* Certify text */}
-          <div className="cert-certify-text">Does Hereby Certify That</div>
-
-          {/* Student name */}
-          <div className="cert-student-name">{studentName.toUpperCase()}</div>
-
-          {/* Completion text */}
-          <div className="cert-completion-text">
-            <em>Has Completed the Training Requirements for<br />and is Recognized as a Graduate of the</em>
-          </div>
-
-          {/* Course title */}
-          <div className="cert-course-title">
-            {courseTitle.toUpperCase()}<br />
-            EXTENSION COURSE
-          </div>
-
-          {/* Gold line */}
-          <div className="cert-gold-line cert-bottom-line" />
-
-          {/* Bottom section */}
-          <div className="cert-bottom">
-            <div className="cert-bottom-left">
-              <div className="cert-attestation">
-                <div className="cert-attest-label">Attested by</div>
-                {isBackentered ? (
-                  <div className="cert-attest-backentered">(Back-entered certificate)</div>
-                ) : (
-                  <div className="cert-attest-line" />
-                )}
-                <div className="cert-attest-title">Certificates & Awards</div>
-              </div>
-              <div className="cert-issued-info">
-                <div className="cert-issued-line">
-                  Issued at <span className="cert-issued-value">Founding Church of Scientology Washington, DC</span>
+            {/* Seal */}
+            <div className="ct-seal">
+              {sealImageUrl ? (
+                <img src={sealImageUrl} alt="Seal" className="ct-seal-img" />
+              ) : (
+                <div className="ct-seal-ph">
+                  <span className="ct-seal-ico">&#9878;</span>
                 </div>
-              </div>
+              )}
             </div>
 
-            <div className="cert-bottom-center">
-              <div className="cert-attestation">
-                <div className="cert-attest-label">Attested by</div>
-                {isBackentered ? (
-                  <div className="cert-attest-backentered">(Back-entered certificate)</div>
-                ) : (
-                  <div className="cert-attest-name">{sealerName}</div>
-                )}
-                <div className="cert-attest-title">Keeper of the Seals and Signature</div>
-              </div>
-              <div className="cert-date-cert-row">
-                <div className="cert-date-block">
-                  Date <span className="cert-date-value">{formattedDate}</span>
+            {/* Organization */}
+            <div className="ct-org">Church of Scientology</div>
+            <div className="ct-dept">Qualifications Division, Department of Validity</div>
+
+            {/* Certify */}
+            <div className="ct-cert"><em>Does Hereby Certify That</em></div>
+
+            {/* Student */}
+            <div className="ct-name">{studentName.toUpperCase()}</div>
+
+            {/* Completion */}
+            <div className="ct-comp">
+              <em>Has Completed the Training Requirements for<br />and is Recognized as a Graduate of the</em>
+            </div>
+
+            {/* Course */}
+            <div className="ct-course">
+              {line1}<br />
+              {line2 && <>{line2}<br /></>}
+              EXTENSION COURSE
+            </div>
+
+            {/* Spacer pushes bottom section down */}
+            <div className="ct-spacer" />
+
+            {/* Bottom gold rule */}
+            <div className="ct-rule" />
+
+            {/* Signatures */}
+            <div className="ct-sigs">
+              <div className="ct-sig ct-sig-l">
+                <div className="ct-sig-lbl">Attested by</div>
+                <div className="ct-sig-box">
+                  {isBackentered ? (
+                    <span className="ct-be">(Back-entered)</span>
+                  ) : attesterSignatureUrl ? (
+                    <img src={attesterSignatureUrl} alt={attesterName} className="ct-sig-img" />
+                  ) : (
+                    <span className="ct-sig-ln" />
+                  )}
                 </div>
-                <div className="cert-number-block">
-                  Certificate No. <span className="cert-number-value">
-                    {certificateNumber || (isBackentered ? 'Back-entered' : '—')}
+                <div className="ct-sig-ttl">Certificates &amp; Awards</div>
+                <div className="ct-issued">
+                  Issued at&nbsp;&nbsp;<span className="ct-ul">Founding Church of Scientology Washington, DC</span>
+                </div>
+              </div>
+
+              <div className="ct-sig ct-sig-c">
+                <div className="ct-sig-lbl">Attested by</div>
+                <div className="ct-sig-box">
+                  {isBackentered ? (
+                    <span className="ct-be">(Back-entered)</span>
+                  ) : sealerSignatureUrl ? (
+                    <img src={sealerSignatureUrl} alt={sealerName} className="ct-sig-img" />
+                  ) : sealerName ? (
+                    <span className="ct-sig-nm">{sealerName}</span>
+                  ) : (
+                    <span className="ct-sig-ln" />
+                  )}
+                </div>
+                <div className="ct-sig-ttl">Keeper of the Seals and Signature</div>
+                <div className="ct-meta">
+                  Date&nbsp;&nbsp;<span className="ct-ul">{formattedDate}</span>
+                </div>
+              </div>
+
+              <div className="ct-sig ct-sig-r">
+                <div className="ct-sig-lbl">&nbsp;</div>
+                <div className="ct-sig-box ct-sig-box-r">
+                  <em className="ct-founder">L. Ron Hubbard</em>
+                </div>
+                <div className="ct-sig-ttl">Founder</div>
+                <div className="ct-meta ct-meta-r">
+                  Certificate No.&nbsp;&nbsp;<span className="ct-ul">
+                    {isBackentered ? (certificateNumber || 'Back Entered') : (certificateNumber || '—')}
                   </span>
                 </div>
               </div>
-            </div>
-
-            <div className="cert-bottom-right">
-              <div className="cert-founder-sig">
-                <em>L. Ron Hubbard</em>
-              </div>
-              <div className="cert-founder-label">Founder</div>
             </div>
           </div>
         </div>
@@ -166,237 +172,48 @@ export function CertificateTemplate({
   )
 }
 
-function getCertStyles() {
+function getCertCSS() {
   return `
-    .cert-page {
-      width: 11in;
-      min-height: 8.5in;
-      background: #fffef9;
-      padding: 0.5in 0.75in;
-      font-family: 'Georgia', 'Times New Roman', serif;
-      color: #333;
-      position: relative;
-      box-sizing: border-box;
-    }
+.cp{width:11in;height:8.5in;background:#fdfcf7;font-family:Georgia,'Times New Roman',serif;color:#2a2a2a;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.cb{width:calc(100% - .8in);height:calc(100% - .6in);border:1px solid #c4a35a;padding:.25in .6in .2in;box-sizing:border-box;display:flex;flex-direction:column;align-items:center}
 
-    .cert-top-text {
-      text-align: center;
-      font-size: 11px;
-      letter-spacing: 6px;
-      color: #999;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
+.ct-top{text-align:center;font-size:10px;letter-spacing:5px;color:#9a8a60;text-transform:uppercase;margin-bottom:2px}
+.ct-rule{width:100%;height:1px;background:#c4a35a;margin:2px 0;flex-shrink:0}
 
-    .cert-gold-line {
-      height: 1px;
-      background: linear-gradient(to right, transparent, #c4a35a, transparent);
-      margin: 8px 0;
-    }
+.ct-seal{margin:10px 0 6px;display:flex;justify-content:center}
+.ct-seal-img{height:80px;width:auto;object-fit:contain}
+.ct-seal-ph{width:80px;height:80px;border-radius:50%;border:2px solid #c4a35a;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f5f0e0,#fdfcf7)}
+.ct-seal-ico{font-size:32px;color:#8b7d3c}
 
-    .cert-bottom-line {
-      margin-top: 24px;
-    }
+.ct-org{text-align:center;font-size:14px;font-variant:small-caps;font-weight:bold;letter-spacing:2px;margin-top:4px}
+.ct-dept{text-align:center;font-size:8px;font-variant:small-caps;letter-spacing:1.5px;color:#555;margin-bottom:6px}
+.ct-cert{text-align:center;font-size:12px;color:#555;margin:6px 0 4px}
+.ct-name{text-align:center;font-size:24px;font-weight:bold;letter-spacing:3px;margin:2px 0}
+.ct-comp{text-align:center;font-size:11px;color:#555;line-height:1.6;margin:4px 0}
+.ct-course{text-align:center;font-size:17px;font-weight:bold;letter-spacing:2px;line-height:1.5;margin:2px 0 0}
 
-    .cert-seal {
-      display: flex;
-      justify-content: center;
-      margin: 16px 0 12px;
-    }
+.ct-spacer{flex:1}
 
-    .cert-seal-inner {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      border: 3px solid #c4a35a;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #f5f0e0 0%, #fff 100%);
-    }
+.ct-sigs{width:100%;display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px}
+.ct-sig{flex:1}
+.ct-sig-l{text-align:left}
+.ct-sig-c{text-align:left}
+.ct-sig-r{text-align:right}
 
-    .cert-seal-text-top,
-    .cert-seal-text-bottom {
-      font-size: 8px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #8b7d3c;
-      font-weight: bold;
-    }
+.ct-sig-lbl{font-size:8px;font-style:italic;color:#999}
+.ct-sig-box{height:32px;display:flex;align-items:flex-end;margin:1px 0}
+.ct-sig-box-r{justify-content:flex-end}
+.ct-sig-img{max-height:30px;max-width:140px;object-fit:contain}
+.ct-sig-ln{display:inline-block;width:120px;border-bottom:1px solid #ccc}
+.ct-sig-nm{font-style:italic;font-size:13px}
+.ct-sig-ttl{font-size:7px;text-transform:uppercase;letter-spacing:.5px;color:#999;margin-top:0}
+.ct-be{font-style:italic;font-size:9px;color:#bbb}
+.ct-founder{font-size:16px}
 
-    .cert-seal-icon {
-      font-size: 32px;
-      color: #8b7d3c;
-      line-height: 1;
-    }
+.ct-issued,.ct-meta{font-size:7px;color:#999;font-style:italic;margin-top:4px}
+.ct-meta-r{text-align:right}
+.ct-ul{border-bottom:1px solid #ccc;padding-bottom:1px}
 
-    .cert-org {
-      text-align: center;
-      margin: 12px 0 8px;
-    }
-
-    .cert-org-name {
-      font-size: 16px;
-      font-variant: small-caps;
-      font-weight: bold;
-      letter-spacing: 2px;
-    }
-
-    .cert-org-dept {
-      font-size: 11px;
-      font-variant: small-caps;
-      letter-spacing: 1px;
-      color: #555;
-    }
-
-    .cert-certify-text {
-      text-align: center;
-      font-style: italic;
-      font-size: 13px;
-      color: #666;
-      margin: 16px 0 8px;
-    }
-
-    .cert-student-name {
-      text-align: center;
-      font-size: 28px;
-      font-weight: bold;
-      letter-spacing: 3px;
-      margin: 8px 0;
-    }
-
-    .cert-completion-text {
-      text-align: center;
-      font-size: 12px;
-      color: #666;
-      margin: 8px 0;
-      line-height: 1.6;
-    }
-
-    .cert-course-title {
-      text-align: center;
-      font-size: 22px;
-      font-weight: bold;
-      letter-spacing: 2px;
-      line-height: 1.4;
-      margin: 8px 0 16px;
-    }
-
-    .cert-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-top: 16px;
-      padding-top: 8px;
-    }
-
-    .cert-bottom-left,
-    .cert-bottom-center,
-    .cert-bottom-right {
-      flex: 1;
-    }
-
-    .cert-bottom-center {
-      text-align: center;
-    }
-
-    .cert-bottom-right {
-      text-align: right;
-    }
-
-    .cert-attestation {
-      margin-bottom: 12px;
-    }
-
-    .cert-attest-label {
-      font-size: 9px;
-      font-style: italic;
-      color: #888;
-    }
-
-    .cert-attest-line {
-      border-bottom: 1px solid #ccc;
-      width: 120px;
-      margin: 4px 0 2px;
-    }
-
-    .cert-attest-name {
-      font-style: italic;
-      font-size: 14px;
-      border-bottom: 1px solid #ccc;
-      display: inline-block;
-      padding-bottom: 2px;
-      margin: 2px 0;
-    }
-
-    .cert-attest-backentered {
-      font-style: italic;
-      font-size: 10px;
-      color: #aaa;
-      margin: 4px 0 2px;
-    }
-
-    .cert-attest-title {
-      font-size: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #888;
-    }
-
-    .cert-issued-info {
-      font-size: 8px;
-      color: #888;
-    }
-
-    .cert-issued-line {
-      font-style: italic;
-    }
-
-    .cert-issued-value {
-      font-style: italic;
-      border-bottom: 1px solid #ccc;
-    }
-
-    .cert-date-cert-row {
-      display: flex;
-      justify-content: center;
-      gap: 24px;
-      font-size: 8px;
-      color: #888;
-    }
-
-    .cert-date-block,
-    .cert-number-block {
-      font-style: italic;
-    }
-
-    .cert-date-value,
-    .cert-number-value {
-      border-bottom: 1px solid #ccc;
-      font-style: italic;
-    }
-
-    .cert-founder-sig {
-      font-size: 18px;
-      font-style: italic;
-      margin-bottom: 4px;
-    }
-
-    .cert-founder-label {
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #888;
-    }
-
-    @media print {
-      body { background: white; }
-      .cert-page {
-        width: 100%;
-        min-height: auto;
-        padding: 0.5in;
-      }
-    }
-  `
+@media print{body{background:#fff}.cp{width:100%;height:100vh}}
+`
 }

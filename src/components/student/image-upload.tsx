@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { SketchPad } from './sketch-pad'
-import { Upload, Camera, PenTool, X, Loader2, ZoomIn } from 'lucide-react'
+import { Upload, Camera, PenTool, Pencil, X, Loader2, ZoomIn } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface ImageUploadProps {
@@ -25,6 +25,7 @@ export function ImageUpload({
   const [uploading, setUploading] = useState(false)
   const [showSketchPad, setShowSketchPad] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [wasDrawn, setWasDrawn] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
@@ -78,12 +79,14 @@ export function ImageUpload({
 
     // Show preview
     setPreviewUrl(URL.createObjectURL(file))
+    setWasDrawn(false)
     await uploadFile(file)
   }
 
   async function handleSketchSave(blob: Blob) {
     setShowSketchPad(false)
     setPreviewUrl(URL.createObjectURL(blob))
+    setWasDrawn(true)
     await uploadFile(blob, 'drawing.png')
   }
 
@@ -100,6 +103,7 @@ export function ImageUpload({
       if (res.ok) {
         setImagePath(null)
         setPreviewUrl(null)
+        setWasDrawn(false)
         toast.success('Image removed')
       }
     } catch {
@@ -108,10 +112,12 @@ export function ImageUpload({
   }
 
   if (showSketchPad) {
+    const editUrl = wasDrawn ? (previewUrl || imageUrl || undefined) : undefined
     return (
       <SketchPad
         onSave={handleSketchSave}
         onCancel={() => setShowSketchPad(false)}
+        initialImageUrl={editUrl}
       />
     )
   }
@@ -211,6 +217,19 @@ export function ImageUpload({
             <PenTool className="h-4 w-4 mr-1.5" />
             Draw
           </Button>
+
+          {wasDrawn && displayUrl && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSketchPad(true)}
+              disabled={uploading}
+            >
+              <Pencil className="h-4 w-4 mr-1.5" />
+              Edit Drawing
+            </Button>
+          )}
         </div>
       )}
     </div>

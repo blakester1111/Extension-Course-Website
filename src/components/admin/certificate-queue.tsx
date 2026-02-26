@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { attestCertificate, sealCertificate } from '@/app/(dashboard)/admin/certificates/actions'
 import { updateCertificateDate } from '@/app/(dashboard)/admin/courses/actions'
 import { toast } from 'sonner'
-import { CheckCircle, Stamp, FileCheck, Loader2, Pencil } from 'lucide-react'
+import { CheckCircle, Stamp, FileCheck, Loader2, Pencil, Mail } from 'lucide-react'
 
 interface CertData {
   id: string
@@ -19,6 +19,7 @@ interface CertData {
   isBackentered: boolean
   studentName: string
   studentEmail: string
+  wantsMail: boolean
   courseTitle: string
   attesterName: string | null
   attestedAt: string | null
@@ -86,7 +87,7 @@ export function CertificateQueue({ certificates, canAttest, canSeal }: Props) {
                 <TableRow>
                   <TableHead>Student</TableHead>
                   <TableHead>Course</TableHead>
-                  {tab === 'pending_seal' && <TableHead>Attested By</TableHead>}
+                  {tab === 'pending_seal' && <TableHead>Cert # / Attested By</TableHead>}
                   {tab === 'issued' && <TableHead>Cert #</TableHead>}
                   {tab === 'issued' && <TableHead>Issued</TableHead>}
                   <TableHead>Created</TableHead>
@@ -120,15 +121,21 @@ function CertRow({ cert, tab, canAttest, canSeal }: {
   canSeal: boolean
 }) {
   const [loading, setLoading] = useState(false)
+  const [certNumber, setCertNumber] = useState('')
   const router = useRouter()
 
   async function handleAttest() {
+    if (!certNumber.trim()) {
+      toast.error('Please enter a certificate number')
+      return
+    }
     setLoading(true)
-    const result = await attestCertificate(cert.id)
+    const result = await attestCertificate(cert.id, certNumber.trim())
     if (result.error) {
       toast.error(result.error)
     } else {
       toast.success(`Attested certificate for ${cert.studentName}`)
+      setCertNumber('')
       router.refresh()
     }
     setLoading(false)
@@ -150,21 +157,29 @@ function CertRow({ cert, tab, canAttest, canSeal }: {
     <TableRow>
       <TableCell>
         <div>
-          <p className="font-medium">{cert.studentName}</p>
+          <p className="font-medium flex items-center gap-1.5">
+            {cert.studentName}
+            {cert.wantsMail && (
+              <span title="Wants mailed certificate"><Mail className="h-3.5 w-3.5 text-blue-500" /></span>
+            )}
+          </p>
           <p className="text-xs text-muted-foreground">{cert.studentEmail}</p>
         </div>
       </TableCell>
       <TableCell>{cert.courseTitle}</TableCell>
       {tab === 'pending_seal' && (
-        <TableCell className="text-sm text-muted-foreground">
-          {cert.attesterName || '—'}
+        <TableCell>
+          <div>
+            <Badge variant="outline" className="font-mono text-xs">{cert.certificateNumber}</Badge>
+            <p className="text-xs text-muted-foreground mt-1">{cert.attesterName || '—'}</p>
+          </div>
         </TableCell>
       )}
       {tab === 'issued' && (
         <TableCell>
           <div className="flex items-center gap-1.5">
             <Badge variant="outline" className="font-mono text-xs">
-              {cert.certificateNumber || (cert.isBackentered ? 'Back-entered' : '—')}
+              {cert.certificateNumber || (cert.isBackentered ? 'Back Entered' : '—')}
             </Badge>
             {cert.isBackentered && (
               <Badge variant="secondary" className="text-xs">BE</Badge>
@@ -185,10 +200,19 @@ function CertRow({ cert, tab, canAttest, canSeal }: {
       </TableCell>
       {tab === 'pending_attestation' && canAttest && (
         <TableCell>
-          <Button size="sm" onClick={handleAttest} disabled={loading} className="gap-1">
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileCheck className="h-3 w-3" />}
-            Attest
-          </Button>
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Cert #"
+              value={certNumber}
+              onChange={(e) => setCertNumber(e.target.value)}
+              className="w-28 h-8 text-xs"
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAttest() }}
+            />
+            <Button size="sm" onClick={handleAttest} disabled={loading || !certNumber.trim()} className="gap-1">
+              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileCheck className="h-3 w-3" />}
+              Attest
+            </Button>
+          </div>
         </TableCell>
       )}
       {tab === 'pending_seal' && canSeal && (

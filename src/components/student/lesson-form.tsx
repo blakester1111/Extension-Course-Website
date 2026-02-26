@@ -12,6 +12,7 @@ import type { Question, Answer, LessonSubmission } from '@/types/database'
 import { toast } from 'sonner'
 import { AlertCircle, CheckCircle, Save, MessageSquare, XCircle } from 'lucide-react'
 import { ImageUpload } from './image-upload'
+import { FormattedText } from '@/components/ui/formatted-text'
 
 interface LessonFormProps {
   submission: LessonSubmission
@@ -151,7 +152,7 @@ export function LessonForm({ submission, questions, existingAnswers, totalQuesti
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <span className="text-muted-foreground font-mono text-sm">{questionOffset + index + 1}.</span>
-                <span className="flex-1">{question.question_text}</span>
+                <span className="flex-1"><FormattedText text={question.question_text} /></span>
                 {hasGrade && (isCorrections || submission.status === 'graded_pass') && (
                   isQuestionCorrect ? (
                     <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 shrink-0">
@@ -173,7 +174,7 @@ export function LessonForm({ submission, questions, existingAnswers, totalQuesti
                 onChange={(e) => setAnswers(prev => ({ ...prev, [question.id]: e.target.value }))}
                 rows={4}
                 disabled={isReadOnly || isQuestionLocked}
-                placeholder={question.requires_image ? 'Describe your diagram/drawing here...' : 'Type your answer here...'}
+                placeholder={question.requires_image ? 'Optional: describe your diagram/drawing here...' : 'Type your answer here...'}
                 className={(isReadOnly || isQuestionLocked) ? 'bg-muted' : ''}
               />
 

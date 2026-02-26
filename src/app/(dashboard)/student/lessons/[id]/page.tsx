@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { LessonForm } from '@/components/student/lesson-form'
 import { getOrCreateSubmission } from '../actions'
 import { ArrowLeft } from 'lucide-react'
+import { FormattedText } from '@/components/ui/formatted-text'
 
 export const metadata = {
   title: 'Lesson — FCDC Extension Courses',
@@ -107,7 +108,7 @@ export default async function StudentLessonPage({ params }: { params: Promise<{ 
       {lesson.instructions && (
         <div className="bg-muted/50 border rounded-lg p-5">
           <p className="text-sm font-medium text-muted-foreground mb-2">Lesson Instructions</p>
-          <p className="whitespace-pre-line">{lesson.instructions}</p>
+          <p className="whitespace-pre-line"><FormattedText text={lesson.instructions} /></p>
         </div>
       )}
 

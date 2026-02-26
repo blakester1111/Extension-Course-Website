@@ -3,7 +3,8 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ClipboardCheck, Users } from 'lucide-react'
+import { ClipboardCheck, Users, Clock } from 'lucide-react'
+import { differenceInHours } from 'date-fns'
 import Link from 'next/link'
 
 export const metadata = {
@@ -41,6 +42,20 @@ export default async function SupervisorDashboardPage() {
     pendingCount = count
   }
 
+  // Count overdue submissions (submitted > 24 hours ago)
+  let overdueCount = 0
+  {
+    const { data: pendingSubs } = await supabase
+      .from('lesson_submissions')
+      .select('submitted_at')
+      .eq('status', 'submitted')
+    if (pendingSubs) {
+      overdueCount = pendingSubs.filter(
+        s => s.submitted_at && differenceInHours(new Date(), new Date(s.submitted_at)) >= 24
+      ).length
+    }
+  }
+
   // Count students
   let studentCount: number | null = 0
   if (isAdmin) {
@@ -69,7 +84,7 @@ export default async function SupervisorDashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link href="/supervisor/queue">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -79,6 +94,18 @@ export default async function SupervisorDashboardPage() {
             <CardContent>
               <div className="text-2xl font-bold">{pendingCount || 0}</div>
               <p className="text-xs text-muted-foreground">Lessons awaiting grading</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/supervisor/queue">
+          <Card className={`hover:shadow-md transition-shadow cursor-pointer ${overdueCount > 0 ? 'border-red-300 dark:border-red-800' : ''}`}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+              <Clock className={`h-4 w-4 ${overdueCount > 0 ? 'text-red-500' : 'text-muted-foreground'}`} />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${overdueCount > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>{overdueCount}</div>
+              <p className="text-xs text-muted-foreground">Waiting over 24 hours</p>
             </CardContent>
           </Card>
         </Link>
