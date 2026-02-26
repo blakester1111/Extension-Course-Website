@@ -11,6 +11,7 @@ import { saveAnswers, submitLesson } from '@/app/(dashboard)/student/lessons/act
 import type { Question, Answer, LessonSubmission } from '@/types/database'
 import { toast } from 'sonner'
 import { AlertCircle, CheckCircle, Save, MessageSquare, XCircle } from 'lucide-react'
+import { ImageUpload } from './image-upload'
 
 interface LessonFormProps {
   submission: LessonSubmission
@@ -172,9 +173,20 @@ export function LessonForm({ submission, questions, existingAnswers, totalQuesti
                 onChange={(e) => setAnswers(prev => ({ ...prev, [question.id]: e.target.value }))}
                 rows={4}
                 disabled={isReadOnly || isQuestionLocked}
-                placeholder="Type your answer here..."
+                placeholder={question.requires_image ? 'Describe your diagram/drawing here...' : 'Type your answer here...'}
                 className={(isReadOnly || isQuestionLocked) ? 'bg-muted' : ''}
               />
+
+              {/* Image upload for diagram/drawing questions */}
+              {question.requires_image && (
+                <ImageUpload
+                  submissionId={submission.id}
+                  questionId={question.id}
+                  existingImagePath={existingAnswer?.image_path ?? null}
+                  disabled={isReadOnly || !!isQuestionLocked}
+                  supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+                />
+              )}
 
               {/* Supervisor feedback */}
               {existingAnswer?.supervisor_feedback && (

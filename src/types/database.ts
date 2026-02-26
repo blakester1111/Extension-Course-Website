@@ -52,6 +52,7 @@ export interface Question {
   lesson_id: string
   question_text: string
   sort_order: number
+  requires_image: boolean
   created_at: string
   updated_at: string
 }
@@ -86,6 +87,7 @@ export interface Answer {
   submission_id: string
   question_id: string
   answer_text: string
+  image_path: string | null
   supervisor_feedback: string | null
   needs_correction: boolean
   created_at: string

@@ -8,10 +8,10 @@ import { Badge } from '@/components/ui/badge'
 import { gradeSubmission } from '@/app/(dashboard)/supervisor/grade/actions'
 import type { LessonSubmission, Answer } from '@/types/database'
 import { toast } from 'sonner'
-import { CheckCircle, XCircle, Lock, MessageSquare, Send } from 'lucide-react'
+import { CheckCircle, XCircle, Lock, MessageSquare, Send, ZoomIn } from 'lucide-react'
 
 interface AnswerWithQuestion extends Answer {
-  question?: { question_text: string; sort_order: number }
+  question?: { question_text: string; sort_order: number; requires_image?: boolean }
 }
 
 interface GradingFormProps {
@@ -104,11 +104,19 @@ export function GradingForm({ submission, answers, totalQuestions, questionOffse
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-2">
                 <div className="bg-muted p-3 rounded-md">
                   <p className="text-xs font-medium text-muted-foreground mb-1">Student&apos;s Answer</p>
                   <p className="text-sm whitespace-pre-wrap">{answer.answer_text}</p>
                 </div>
+                {answer.image_path && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Student&apos;s Diagram</p>
+                    <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/answer-images/${answer.image_path}`} target="_blank" rel="noopener noreferrer" className="inline-block">
+                      <img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/answer-images/${answer.image_path}`} alt="Student diagram" className="max-h-64 rounded-md border hover:opacity-90 cursor-pointer" />
+                    </a>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )
@@ -143,6 +151,15 @@ export function GradingForm({ submission, answers, totalQuestions, questionOffse
                 <p className="text-xs font-medium text-muted-foreground mb-1">Student&apos;s Answer</p>
                 <p className="text-sm whitespace-pre-wrap">{answer.answer_text}</p>
               </div>
+
+              {answer.image_path && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Student&apos;s Diagram</p>
+                  <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/answer-images/${answer.image_path}`} target="_blank" rel="noopener noreferrer" className="inline-block">
+                    <img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/answer-images/${answer.image_path}`} alt="Student diagram" className="max-h-64 rounded-md border hover:opacity-90 cursor-pointer" />
+                  </a>
+                </div>
+              )}
 
               {!isAlreadyGraded && (
                 <>

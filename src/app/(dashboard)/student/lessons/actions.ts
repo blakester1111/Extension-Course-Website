@@ -85,7 +85,7 @@ export async function submitLesson(submissionId: string) {
 
   const { data: questions } = await supabase
     .from('questions')
-    .select('id')
+    .select('id, requires_image')
     .eq('lesson_id', submission.lesson_id)
 
   if (submission.status === 'graded_corrections') {
@@ -95,6 +95,13 @@ export async function submitLesson(submissionId: string) {
     if (emptyIncorrect.length > 0) {
       return { error: 'Please revise all incorrect answers before resubmitting' }
     }
+
+    // Validate images for incorrect answers that require them
+    const imageQuestionIds = new Set((questions || []).filter(q => q.requires_image).map(q => q.id))
+    const missingImages = incorrectAnswers.filter(a => imageQuestionIds.has(a.question_id) && !a.image_path)
+    if (missingImages.length > 0) {
+      return { error: 'Please upload a diagram/drawing for all required questions before resubmitting' }
+    }
   } else {
     // For first submission, validate all questions answered
     const answeredIds = new Set((answers || []).map(a => a.question_id))
@@ -102,6 +109,16 @@ export async function submitLesson(submissionId: string) {
 
     if (unanswered.length > 0) {
       return { error: 'Please answer all questions before submitting' }
+    }
+
+    // Validate images for questions that require them
+    const imageQuestions = (questions || []).filter(q => q.requires_image)
+    const missingImages = imageQuestions.filter(q => {
+      const answer = (answers || []).find(a => a.question_id === q.id)
+      return !answer?.image_path
+    })
+    if (missingImages.length > 0) {
+      return { error: 'Please upload a diagram/drawing for all required questions before submitting' }
     }
   }
 

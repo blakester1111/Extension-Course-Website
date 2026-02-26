@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { createQuestion, deleteQuestion, updateQuestion } from '@/app/(dashboard)/admin/courses/[id]/lessons/actions'
+import { createQuestion, deleteQuestion, updateQuestion, toggleQuestionRequiresImage } from '@/app/(dashboard)/admin/courses/[id]/lessons/actions'
 import type { Question } from '@/types/database'
-import { Trash2, Plus, Save } from 'lucide-react'
+import { Trash2, Plus, Save, ImageIcon } from 'lucide-react'
 
 interface QuestionListProps {
   lessonId: string
@@ -106,6 +106,21 @@ export function QuestionList({ lessonId, courseId, questions: initialQuestions, 
                 >
                   {q.question_text}
                 </p>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={async () => {
+                    const newVal = !q.requires_image
+                    const result = await toggleQuestionRequiresImage(q.id, lessonId, courseId, newVal)
+                    if (!result?.error) {
+                      setQuestions(prev => prev.map(p => p.id === q.id ? { ...p, requires_image: newVal } : p))
+                    }
+                  }}
+                  className={`h-8 w-8 shrink-0 ${q.requires_image ? 'text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/60' : 'text-muted-foreground'}`}
+                  title={q.requires_image ? 'Requires image (click to remove)' : 'Click to require diagram/image'}
+                >
+                  <ImageIcon className="h-3 w-3" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

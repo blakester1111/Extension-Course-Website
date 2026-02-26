@@ -245,6 +245,22 @@ export async function updateQuestion(questionId: string, lessonId: string, cours
   revalidatePath(`/admin/courses/${courseId}/lessons/${lessonId}`)
 }
 
+export async function toggleQuestionRequiresImage(questionId: string, lessonId: string, courseId: string, requiresImage: boolean) {
+  const { supabase } = await requireAdmin()
+
+  const { error } = await supabase
+    .from('questions')
+    .update({ requires_image: requiresImage })
+    .eq('id', questionId)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath(`/admin/courses/${courseId}/lessons/${lessonId}`)
+  return { success: true }
+}
+
 export async function deleteQuestion(questionId: string, lessonId: string, courseId: string) {
   const { supabase } = await requireAdmin()
 
