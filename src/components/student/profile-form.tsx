@@ -10,12 +10,46 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Profile } from '@/types/database'
 import { toast } from 'sonner'
 
-export function ProfileForm({ profile, supervisorName }: { profile: Profile; supervisorName: string | null }) {
+interface StudyRouteOption {
+  id: string
+  name: string
+}
+
+export function ProfileForm({ profile, supervisorName, studyRoutes, currentRouteName }: {
+  profile: Profile
+  supervisorName: string | null
+  studyRoutes?: StudyRouteOption[]
+  currentRouteName?: string | null
+}) {
   const [fullName, setFullName] = useState(profile.full_name)
   const [certPref, setCertPref] = useState(profile.cert_mail_preference || 'digital')
   const [saving, setSaving] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
   const supabase = createClient()
   const router = useRouter()
+
+  async function handleChangePassword() {
+    if (newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match')
+      return
+    }
+    setChangingPassword(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) {
+      toast.error(error.message)
+    } else {
+      toast.success('Password updated successfully')
+      setNewPassword('')
+      setConfirmPassword('')
+    }
+    setChangingPassword(false)
+  }
 
   async function handleSave() {
     setSaving(true)
@@ -62,8 +96,50 @@ export function ProfileForm({ profile, supervisorName }: { profile: Profile; sup
               <Input value={supervisorName} disabled className="bg-muted" />
             </div>
           )}
+          <div className="space-y-2">
+            <Label>Study Route</Label>
+            <Input value={currentRouteName || 'Not assigned'} disabled className="bg-muted" />
+            <p className="text-xs text-muted-foreground">
+              Your study route determines the suggested order of courses. Contact your supervisor to change it.
+            </p>
+          </div>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Change Password</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="new_password">New Password</Label>
+            <Input
+              id="new_password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Minimum 8 characters"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm_password">Confirm New Password</Label>
+            <Input
+              id="confirm_password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Re-enter new password"
+            />
+          </div>
+          <Button
+            onClick={handleChangePassword}
+            disabled={changingPassword || !newPassword || !confirmPassword}
+            variant="outline"
+          >
+            {changingPassword ? 'Updating...' : 'Update Password'}
           </Button>
         </CardContent>
       </Card>

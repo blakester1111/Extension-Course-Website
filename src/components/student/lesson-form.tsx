@@ -53,7 +53,10 @@ export function LessonForm({ submission, questions, existingAnswers, totalQuesti
         questionId,
         answerText,
       }))
-      await saveAnswers(submission.id, answerData)
+      const result = await saveAnswers(submission.id, answerData)
+      if (result.error) {
+        toast.error('Auto-save failed. Check your connection and try again.')
+      }
       setSaving(false)
     }
 

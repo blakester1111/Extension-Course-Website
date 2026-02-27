@@ -117,3 +117,17 @@ export interface HonorRollStreak {
   last_submission_week: string | null
   updated_at: string
 }
+
+export interface StudyRoute {
+  id: string
+  name: string
+  description: string | null
+  created_at: string
+}
+
+export interface StudyRouteCourse {
+  id: string
+  route_id: string
+  course_id: string
+  position: number
+}

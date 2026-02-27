@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { sendNotificationEmail } from '@/lib/resend/send-notification'
 import { checkAndCreateCertificate } from '@/lib/certificates'
+import { findNextCourse } from '@/lib/next-course'
 
 async function requireSupervisor() {
   const supabase = await createClient()
@@ -214,24 +215,15 @@ export async function gradeSubmission(
 
       // Send course completion congrats email with next course link
       if (courseCompleted && studentProfile?.email) {
-        // Get current course details
         const { data: currentCourse } = await supabase
           .from('courses')
-          .select('title, category, sort_order')
+          .select('title, category')
           .eq('id', courseId)
           .single()
 
         if (currentCourse) {
-          // Find the next course in the same category by sort_order
-          const { data: nextCourse } = await supabase
-            .from('courses')
-            .select('id, title, slug')
-            .eq('category', currentCourse.category)
-            .eq('is_published', true)
-            .gt('sort_order', currentCourse.sort_order)
-            .order('sort_order', { ascending: true })
-            .limit(1)
-            .maybeSingle()
+          // Find next course via study route (if assigned) or category order
+          const nextCourse = await findNextCourse(supabase, submission.student_id, courseId)
 
           const courseTitle = currentCourse.title
           const categoryLabel = currentCourse.category === 'basics' ? 'Basics'
@@ -242,7 +234,7 @@ export async function gradeSubmission(
           let congratsButton = 'View My Certificates'
 
           if (nextCourse) {
-            congratsText += ` Your next course in the ${categoryLabel} lineup is "${nextCourse.title}". Click below to learn more and enroll.`
+            congratsText += ` Your next course is "${nextCourse.title}". Click below to learn more and enroll.`
             congratsLink = `/catalog/${nextCourse.slug}`
             congratsButton = 'View Next Course'
           } else {

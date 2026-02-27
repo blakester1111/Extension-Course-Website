@@ -15,6 +15,7 @@ import { OrganizationAssign } from '@/components/admin/organization-assign'
 import { BackenterDialog } from '@/components/admin/backenter-dialog'
 import { UsersFilterBar, type SortOption } from '@/components/admin/users-filter-bar'
 import { CertPermissionToggles } from '@/components/admin/cert-permission-toggles'
+import { RouteAssign } from '@/components/admin/route-assign'
 import { enrollStudent } from '@/app/(dashboard)/admin/courses/actions'
 import { toast } from 'sonner'
 import { Plus, Trophy } from 'lucide-react'
@@ -30,6 +31,7 @@ interface UserData {
   is_staff: boolean
   can_attest_certs: boolean
   can_sign_certs: boolean
+  study_route_id: string | null
   created_at: string
 }
 
@@ -48,6 +50,7 @@ interface AdminUsersListProps {
   currentUserId: string
   currentUserRole: UserRole
   honorRollRanks: Record<string, number>
+  studyRoutes: { id: string; name: string }[]
 }
 
 export function AdminUsersList({
@@ -58,6 +61,7 @@ export function AdminUsersList({
   currentUserId,
   currentUserRole,
   honorRollRanks,
+  studyRoutes,
 }: AdminUsersListProps) {
   const [search, setSearch] = useState('')
   const [org, setOrg] = useState('all')
@@ -146,6 +150,7 @@ export function AdminUsersList({
                 currentUserId={currentUserId}
                 currentUserRole={currentUserRole}
                 honorRank={honorRank}
+                studyRoutes={studyRoutes}
               />
             )
           })}
@@ -168,6 +173,7 @@ function UserCard({
   currentUserId,
   currentUserRole,
   honorRank,
+  studyRoutes,
 }: {
   user: UserData
   userEnrollments: Enrollment[]
@@ -177,6 +183,7 @@ function UserCard({
   currentUserId: string
   currentUserRole: UserRole
   honorRank: number | undefined
+  studyRoutes: { id: string; name: string }[]
 }) {
   const [selectedCourse, setSelectedCourse] = useState('')
   const [invoiceNumber, setInvoiceNumber] = useState('')
@@ -336,8 +343,15 @@ function UserCard({
             )}
           </div>
 
-          {/* Col 6: empty (under Supervisor label) */}
-          <div />
+          {/* Col 6: Route (under Supervisor label) */}
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground">Route:</span>
+            <RouteAssign
+              studentId={u.id}
+              currentRouteId={u.study_route_id}
+              routes={studyRoutes}
+            />
+          </div>
 
           {/* Col 7: Invoice # (aligned under Supervisor dropdown) */}
           <div>

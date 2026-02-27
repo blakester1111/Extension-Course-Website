@@ -32,6 +32,17 @@ export default async function StudentProfilePage() {
     supervisorName = supervisor?.full_name || null
   }
 
+  // Fetch study route name
+  let currentRouteName: string | null = null
+  if (profile.study_route_id) {
+    const { data: route } = await supabase
+      .from('study_routes')
+      .select('name')
+      .eq('id', profile.study_route_id)
+      .single()
+    currentRouteName = route?.name || null
+  }
+
   return (
     <div className="max-w-lg space-y-6">
       <div>
@@ -39,7 +50,7 @@ export default async function StudentProfilePage() {
         <p className="text-muted-foreground">Manage your account settings</p>
       </div>
 
-      <ProfileForm profile={profile} supervisorName={supervisorName} />
+      <ProfileForm profile={profile} supervisorName={supervisorName} currentRouteName={currentRouteName} />
     </div>
   )
 }

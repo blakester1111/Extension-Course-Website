@@ -38,6 +38,12 @@ export default async function AdminStudentsPage() {
     .select('id, title')
     .order('title', { ascending: true })
 
+  // Get study routes
+  const { data: studyRoutes } = await supabase
+    .from('study_routes')
+    .select('id, name')
+    .order('name')
+
   const { data: enrollments } = await supabase
     .from('enrollments')
     .select('student_id, course_id, status, invoice_number, course:courses(title)')
@@ -86,6 +92,7 @@ export default async function AdminStudentsPage() {
           is_staff: u.is_staff ?? false,
           can_attest_certs: u.can_attest_certs ?? false,
           can_sign_certs: u.can_sign_certs ?? false,
+          study_route_id: u.study_route_id || null,
           created_at: u.created_at,
         }))}
         enrollmentsByUser={enrollmentsByUser}
@@ -94,6 +101,7 @@ export default async function AdminStudentsPage() {
         currentUserId={user.id}
         currentUserRole={(currentProfile?.role as UserRole) || 'admin'}
         honorRollRanks={honorRollRanks}
+        studyRoutes={studyRoutes || []}
       />
     </div>
   )

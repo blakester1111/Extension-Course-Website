@@ -21,6 +21,7 @@ import {
   Settings,
   Award,
   UserX,
+  Route,
 } from 'lucide-react'
 import {
   Tooltip,
@@ -68,6 +69,7 @@ const adminLinks: SidebarLink[] = [
   { href: '/supervisor/reports', label: 'Reports', icon: BarChart3 },
   { href: '/admin/reports/revenue', label: 'Revenue', icon: DollarSign },
   { href: '/admin/certificates', label: 'Certificates', icon: Award },
+  { href: '/admin/routes', label: 'Study Routes', icon: Route },
   { href: '/admin/deadfile', label: 'Deadfile', icon: UserX },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
