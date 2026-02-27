@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BookOpen, Users, GraduationCap, ClipboardCheck } from 'lucide-react'
 import Link from 'next/link'
+import { OnboardingFlow } from '@/components/onboarding/onboarding-flow'
 
 export const metadata = {
   title: 'Admin Dashboard — FCDC Extension Courses',
@@ -23,6 +24,12 @@ export default async function AdminDashboardPage() {
 
   if (!profile || !['admin', 'super_admin'].includes(profile.role)) redirect('/')
 
+  // Fetch study routes for onboarding wizard
+  const { data: allRoutes } = await supabase
+    .from('study_routes')
+    .select('id, name')
+    .order('name')
+
   const [
     { count: courseCount },
     { count: studentCount },
@@ -35,8 +42,20 @@ export default async function AdminDashboardPage() {
     supabase.from('lesson_submissions').select('*', { count: 'exact', head: true }).eq('status', 'submitted'),
   ])
 
+  const needsOnboarding = !profile?.onboarding_completed_at
+  const studyRoutes = (allRoutes || []).map(r => ({ id: r.id, name: r.name }))
+
   return (
     <div className="space-y-6">
+      <OnboardingFlow
+        role={profile.role as any}
+        fullName={profile.full_name || ''}
+        needsOnboarding={needsOnboarding}
+        studyRoutes={studyRoutes}
+        currentRouteId={profile.study_route_id || null}
+        certMailPreference={profile.cert_mail_preference || 'digital'}
+      />
+
       <div>
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <p className="text-muted-foreground">Platform overview and management</p>

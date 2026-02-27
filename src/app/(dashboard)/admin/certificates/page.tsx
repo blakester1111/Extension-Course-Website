@@ -33,6 +33,7 @@ export default async function CertificatesPage() {
     .from('certificates')
     .select(`
       id, status, certificate_number, is_backentered, attested_at, sealed_at, issued_at, created_at,
+      mail_status, mailed_at,
       student:profiles!certificates_student_id_fkey(full_name, email, cert_mail_preference),
       course:courses(title),
       attester:profiles!certificates_attested_by_fkey(full_name),
@@ -55,6 +56,8 @@ export default async function CertificatesPage() {
     sealedAt: c.sealed_at,
     issuedAt: c.issued_at,
     createdAt: c.created_at,
+    mailStatus: c.mail_status || null,
+    mailedAt: c.mailed_at || null,
   }))
 
   return (

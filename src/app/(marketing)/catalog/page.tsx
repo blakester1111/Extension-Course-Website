@@ -30,6 +30,17 @@ export default async function CatalogPage({
 
   const { data: courses } = await query
 
+  // Check user's enrollments to show badges on cards
+  const { data: { user } } = await supabase.auth.getUser()
+  let enrolledCourseIds: string[] = []
+  if (user) {
+    const { data: enrollments } = await supabase
+      .from('enrollments')
+      .select('course_id')
+      .eq('student_id', user.id)
+    enrolledCourseIds = (enrollments || []).map(e => e.course_id)
+  }
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
       <div>
@@ -43,7 +54,7 @@ export default async function CatalogPage({
         <CategoryFilter />
       </Suspense>
 
-      <CourseGrid courses={courses || []} />
+      <CourseGrid courses={courses || []} enrolledCourseIds={enrolledCourseIds} />
     </div>
   )
 }

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { AdminUsersList } from '@/components/admin/admin-users-list'
+import { MergeProfilesDialog } from '@/components/admin/merge-profiles-dialog'
 import type { UserRole } from '@/types/database'
 
 export const metadata = {
@@ -76,9 +77,19 @@ export default async function AdminStudentsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Users</h1>
-        <p className="text-muted-foreground">Manage all users — change roles, assign supervisors, organizations, and enroll in courses</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Users</h1>
+          <p className="text-muted-foreground">Manage all users — change roles, assign supervisors, organizations, and enroll in courses</p>
+        </div>
+        <MergeProfilesDialog
+          users={(allUsers || []).map((u: any) => ({
+            id: u.id,
+            full_name: u.full_name,
+            email: u.email,
+            role: u.role,
+          }))}
+        />
       </div>
 
       <AdminUsersList

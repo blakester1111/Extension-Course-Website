@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Award } from 'lucide-react'
+import { Award, Package, PackageCheck } from 'lucide-react'
 import Link from 'next/link'
 
 export const metadata = {
@@ -16,9 +16,17 @@ export default async function StudentCertificatesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('cert_mail_preference')
+    .eq('id', user.id)
+    .single()
+
+  const wantsMail = profile?.cert_mail_preference === 'mail'
+
   const { data: certificates } = await supabase
     .from('certificates')
-    .select('id, status, certificate_number, issued_at, is_backentered, course:courses(title)')
+    .select('id, status, certificate_number, issued_at, is_backentered, mail_status, mailed_at, course:courses(title)')
     .eq('student_id', user.id)
     .order('created_at', { ascending: false })
 
@@ -46,6 +54,21 @@ export default async function StudentCertificatesPage() {
                   <p className="text-xs text-muted-foreground">
                     Issued {new Date(cert.issued_at).toLocaleDateString()}
                   </p>
+                  {wantsMail && (
+                    <p className="text-xs flex items-center justify-center gap-1">
+                      {cert.mail_status === 'mailed' ? (
+                        <span className="text-green-600 flex items-center gap-1">
+                          <PackageCheck className="h-3 w-3" />
+                          Mailed {cert.mailed_at ? new Date(cert.mailed_at).toLocaleDateString() : ''}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          Mail pending
+                        </span>
+                      )}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </Link>

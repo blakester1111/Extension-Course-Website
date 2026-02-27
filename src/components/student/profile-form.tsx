@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Profile } from '@/types/database'
 import { toast } from 'sonner'
@@ -23,6 +24,7 @@ export function ProfileForm({ profile, supervisorName, studyRoutes, currentRoute
 }) {
   const [fullName, setFullName] = useState(profile.full_name)
   const [certPref, setCertPref] = useState(profile.cert_mail_preference || 'digital')
+  const [selectedRouteId, setSelectedRouteId] = useState(profile.study_route_id || 'none')
   const [saving, setSaving] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -55,7 +57,11 @@ export function ProfileForm({ profile, supervisorName, studyRoutes, currentRoute
     setSaving(true)
     const { error } = await supabase
       .from('profiles')
-      .update({ full_name: fullName, cert_mail_preference: certPref })
+      .update({
+        full_name: fullName,
+        cert_mail_preference: certPref,
+        study_route_id: selectedRouteId === 'none' ? null : selectedRouteId,
+      })
       .eq('id', profile.id)
 
     if (error) {
@@ -98,9 +104,19 @@ export function ProfileForm({ profile, supervisorName, studyRoutes, currentRoute
           )}
           <div className="space-y-2">
             <Label>Study Route</Label>
-            <Input value={currentRouteName || 'Not assigned'} disabled className="bg-muted" />
+            <Select value={selectedRouteId} onValueChange={setSelectedRouteId}>
+              <SelectTrigger>
+                <SelectValue placeholder="No route selected" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No route selected</SelectItem>
+                {(studyRoutes || []).map(r => (
+                  <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground">
-              Your study route determines the suggested order of courses. Contact your supervisor to change it.
+              Your study route determines the suggested order of courses.
             </p>
           </div>
           <Button onClick={handleSave} disabled={saving}>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ClipboardCheck, Users, Clock } from 'lucide-react'
 import { differenceInHours } from 'date-fns'
 import Link from 'next/link'
+import { OnboardingFlow } from '@/components/onboarding/onboarding-flow'
 
 export const metadata = {
   title: 'Supervisor Dashboard — FCDC Extension Courses',
@@ -56,6 +57,12 @@ export default async function SupervisorDashboardPage() {
     }
   }
 
+  // Fetch study routes for onboarding wizard
+  const { data: allRoutes } = await supabase
+    .from('study_routes')
+    .select('id, name')
+    .order('name')
+
   // Count students
   let studentCount: number | null = 0
   if (isAdmin) {
@@ -75,8 +82,20 @@ export default async function SupervisorDashboardPage() {
     studentCount = count
   }
 
+  const needsOnboarding = !profile?.onboarding_completed_at
+  const studyRoutes = (allRoutes || []).map(r => ({ id: r.id, name: r.name }))
+
   return (
     <div className="space-y-6">
+      <OnboardingFlow
+        role={profile?.role || 'supervisor'}
+        fullName={profile?.full_name || ''}
+        needsOnboarding={needsOnboarding}
+        studyRoutes={studyRoutes}
+        currentRouteId={profile?.study_route_id || null}
+        certMailPreference={profile?.cert_mail_preference || 'digital'}
+      />
+
       <div>
         <h1 className="text-3xl font-bold">Welcome back, {profile?.full_name || 'Supervisor'}</h1>
         <p className="text-muted-foreground">

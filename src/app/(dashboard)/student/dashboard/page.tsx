@@ -3,11 +3,12 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { BookOpen, Clock } from 'lucide-react'
+import { BookOpen, Clock, ArrowRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { PersonalStats } from '@/components/gamification/personal-stats'
-import { CategoryProgress } from '@/components/gamification/category-progress'
+import { RouteProgress } from '@/components/gamification/route-progress'
+import { OnboardingFlow } from '@/components/onboarding/onboarding-flow'
 
 export const metadata = {
   title: 'Student Dashboard — FCDC Extension Courses',
@@ -52,10 +53,10 @@ export default async function StudentDashboardPage() {
     if (idx >= 0) honorRank = idx + 1
   }
 
-  // Get passed submissions per course for category progress
+  // Get passed submissions per course (all, for progress tracking including back-entered)
   const { data: passedSubs } = await supabase
     .from('lesson_submissions')
-    .select('lesson_id, lesson:lessons(course_id), graded_at')
+    .select('lesson_id, lesson:lessons(course_id), graded_at, is_backentered')
     .eq('student_id', user.id)
     .eq('status', 'graded_pass')
 
@@ -68,11 +69,11 @@ export default async function StudentDashboardPage() {
   }
 
   // Compute personal best week (most lessons passed in a single ISO week)
+  // Exclude back-entered submissions from this stat
   const weekCounts = new Map<string, number>()
   for (const sub of passedSubs || []) {
-    if (!sub.graded_at) continue
+    if (!sub.graded_at || (sub as any).is_backentered) continue
     const d = new Date(sub.graded_at)
-    // ISO week key: year-week
     const jan4 = new Date(d.getFullYear(), 0, 4)
     const dayOfYear = Math.floor((d.getTime() - new Date(d.getFullYear(), 0, 1).getTime()) / 86400000) + 1
     const weekNum = Math.ceil((dayOfYear + jan4.getDay()) / 7)
@@ -81,31 +82,111 @@ export default async function StudentDashboardPage() {
   }
   const personalBestWeek = weekCounts.size > 0 ? Math.max(...weekCounts.values()) : 0
 
-  // Build course progress for all published courses in enrolled categories
   const activeEnrollments = (enrollments || []).filter((e: any) => e.status === 'active')
   const pendingEnrollments = (enrollments || []).filter((e: any) => e.status === 'pending_invoice_verification')
 
-  // Get ALL published courses for category progress (not just enrolled ones)
-  const { data: allCourses } = await supabase
-    .from('courses')
-    .select('id, title, category, lesson_count')
-    .eq('is_published', true)
-    .order('sort_order')
+  // Find current in-progress lesson
+  let continueLearning: { lessonId: string; lessonTitle: string; courseTitle: string; courseId: string; status: string } | null = null
+  if (activeEnrollments.length > 0) {
+    const activeCourseIds = activeEnrollments.map((e: any) => e.course_id)
+    const { data: inProgressSubs } = await supabase
+      .from('lesson_submissions')
+      .select('id, lesson_id, status, updated_at, lesson:lessons(title, course_id, course:courses(title))')
+      .eq('student_id', user.id)
+      .in('status', ['draft', 'graded_corrections'])
+      .order('updated_at', { ascending: false })
+      .limit(10)
 
-  const categoryProgressData = (allCourses || []).map((c: any) => ({
-    courseId: c.id,
-    title: c.title,
-    category: c.category,
-    totalLessons: c.lesson_count || 0,
-    passedLessons: passedByCourseLookup.get(c.id) || 0,
-  }))
+    for (const sub of inProgressSubs || []) {
+      const lesson = sub.lesson as any
+      if (lesson && activeCourseIds.includes(lesson.course_id)) {
+        continueLearning = {
+          lessonId: sub.lesson_id,
+          lessonTitle: lesson.title,
+          courseTitle: lesson.course?.title || '',
+          courseId: lesson.course_id,
+          status: sub.status,
+        }
+        break
+      }
+    }
+  }
+
+  // ── Route Progress Data ──
+  // Fetch all routes with their courses
+  const { data: allRoutes } = await supabase
+    .from('study_routes')
+    .select('id, name')
+    .order('name')
+
+  const { data: allRouteCourses } = await supabase
+    .from('study_route_courses')
+    .select('route_id, course_id, position, course:courses(id, title, lesson_count, is_published)')
+    .order('position')
+
+  // Build route progress data
+  const routeProgressData = (allRoutes || []).map(route => {
+    const routeCourses = (allRouteCourses || [])
+      .filter(rc => rc.route_id === route.id)
+      .filter(rc => (rc.course as any)?.is_published)
+      .sort((a, b) => a.position - b.position)
+
+    return {
+      routeId: route.id,
+      routeName: route.name,
+      courses: routeCourses.map(rc => {
+        const course = rc.course as any
+        return {
+          courseId: rc.course_id,
+          title: course?.title || '',
+          totalLessons: course?.lesson_count || 0,
+          passedLessons: passedByCourseLookup.get(rc.course_id) || 0,
+          position: rc.position,
+        }
+      }),
+    }
+  })
+
+  // Onboarding data
+  const needsOnboarding = !profile?.onboarding_completed_at
+  const studyRoutes = (allRoutes || []).map(r => ({ id: r.id, name: r.name }))
 
   return (
     <div className="space-y-6">
+      <OnboardingFlow
+        role="student"
+        fullName={profile?.full_name || ''}
+        needsOnboarding={needsOnboarding}
+        studyRoutes={studyRoutes}
+        currentRouteId={profile?.study_route_id || null}
+        certMailPreference={profile?.cert_mail_preference || 'digital'}
+      />
+
       <div>
         <h1 className="text-3xl font-bold">Welcome back, {profile?.full_name || 'Student'}</h1>
         <p className="text-muted-foreground">Your enrolled courses and progress</p>
       </div>
+
+      {/* Continue Learning CTA */}
+      {continueLearning && (
+        <Link href={`/student/lessons/${continueLearning.lessonId}`}>
+          <Card className="border-primary/30 bg-primary/5 hover:shadow-md transition-shadow cursor-pointer mb-2">
+            <CardContent className="flex items-center gap-4 py-4">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <BookOpen className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">
+                  {continueLearning.status === 'graded_corrections' ? 'Corrections Needed' : 'Continue Learning'}
+                </p>
+                <p className="font-semibold truncate">{continueLearning.lessonTitle}</p>
+                <p className="text-xs text-muted-foreground">{continueLearning.courseTitle}</p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground shrink-0" />
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
       {/* Personal stats */}
       <PersonalStats
@@ -116,13 +197,7 @@ export default async function StudentDashboardPage() {
         honorRank={honorRank}
       />
 
-      {/* Category progress */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Category Progress</h2>
-        <CategoryProgress courses={categoryProgressData} />
-      </div>
-
-      {/* Enrolled courses */}
+      {/* My Courses (moved above route progress) */}
       {(() => {
         if (activeEnrollments.length === 0 && pendingEnrollments.length === 0) {
           return (
@@ -213,6 +288,17 @@ export default async function StudentDashboardPage() {
           </>
         )
       })()}
+
+      {/* Route Progress */}
+      {routeProgressData.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold mb-3">Route Progress</h2>
+          <RouteProgress
+            assignedRouteId={profile?.study_route_id || null}
+            routes={routeProgressData}
+          />
+        </div>
+      )}
     </div>
   )
 }

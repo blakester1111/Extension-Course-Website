@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Send, Loader2, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Send, Loader2, CheckCircle, AlertTriangle, Download } from 'lucide-react'
 import { format } from 'date-fns'
 import { sendNudge } from '@/app/(dashboard)/supervisor/reports/inactive/actions'
 
@@ -104,6 +104,21 @@ export function InactiveStudentsTable({ students }: { students: InactiveStudent[
 
   const allSelected = inactive.length > 0 && inactive.every(s => selected.has(s.id))
 
+  function exportCSV() {
+    const header = 'Student Name,Email,Courses,Last Submission,Days Inactive'
+    const rows = inactive.map(s =>
+      `"${s.fullName}","${s.email}","${s.courseNames.join('; ')}","${s.lastSubmission ? format(new Date(s.lastSubmission), 'yyyy-MM-dd') : 'Never'}",${s.daysSinceLastSubmission ?? 'N/A'}`
+    )
+    const csv = [header, ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `inactive-students-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -118,6 +133,10 @@ export function InactiveStudentsTable({ students }: { students: InactiveStudent[
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={exportCSV} disabled={inactive.length === 0}>
+              <Download className="h-4 w-4 mr-2" />
+              CSV
+            </Button>
             <Select value={threshold} onValueChange={setThreshold}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue />

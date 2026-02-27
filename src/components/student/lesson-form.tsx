@@ -43,6 +43,26 @@ export function LessonForm({ submission, questions, existingAnswers, totalQuesti
 
   const debouncedAnswers = useDebounce(answers, 1500)
 
+  // Track if there are unsaved changes (answers differ from last saved state)
+  const [lastSavedAnswers, setLastSavedAnswers] = useState<Record<string, string>>(
+    Object.fromEntries(questions.map(q => [q.id, answerMap.get(q.id)?.answer_text || '']))
+  )
+  const hasUnsavedChanges = !isReadOnly && Object.keys(answers).some(
+    key => answers[key] !== lastSavedAnswers[key]
+  )
+
+  // Warn before navigating away with unsaved changes
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault()
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges])
+
   // Auto-save
   useEffect(() => {
     if (isReadOnly) return
@@ -56,6 +76,8 @@ export function LessonForm({ submission, questions, existingAnswers, totalQuesti
       const result = await saveAnswers(submission.id, answerData)
       if (result.error) {
         toast.error('Auto-save failed. Check your connection and try again.')
+      } else {
+        setLastSavedAnswers({ ...debouncedAnswers })
       }
       setSaving(false)
     }

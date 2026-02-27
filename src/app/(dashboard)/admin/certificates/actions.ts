@@ -147,3 +147,29 @@ export async function sealCertificate(certificateId: string) {
   revalidatePath('/admin/certificates')
   return { success: true }
 }
+
+/** Mark a certificate as mailed or clear mail status */
+export async function updateMailStatus(
+  certificateId: string,
+  status: 'needs_mailing' | 'mailed' | null
+) {
+  const { supabase, profile } = await requireAuth()
+
+  if (!profile.can_attest_certs && !['admin', 'super_admin'].includes(profile.role)) {
+    return { error: 'You do not have permission to update mail status' }
+  }
+
+  const update: Record<string, any> = {
+    mail_status: status,
+    mailed_at: status === 'mailed' ? new Date().toISOString() : null,
+  }
+
+  const { error } = await supabase
+    .from('certificates')
+    .update(update)
+    .eq('id', certificateId)
+
+  if (error) return { error: error.message }
+  revalidatePath('/admin/certificates')
+  return { success: true }
+}

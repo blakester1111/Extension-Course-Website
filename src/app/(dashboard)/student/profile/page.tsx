@@ -32,15 +32,17 @@ export default async function StudentProfilePage() {
     supervisorName = supervisor?.full_name || null
   }
 
-  // Fetch study route name
+  // Fetch study routes (all available)
+  const { data: studyRoutes } = await supabase
+    .from('study_routes')
+    .select('id, name')
+    .order('name')
+
+  // Fetch current route name
   let currentRouteName: string | null = null
   if (profile.study_route_id) {
-    const { data: route } = await supabase
-      .from('study_routes')
-      .select('name')
-      .eq('id', profile.study_route_id)
-      .single()
-    currentRouteName = route?.name || null
+    const match = (studyRoutes || []).find(r => r.id === profile.study_route_id)
+    currentRouteName = match?.name || null
   }
 
   return (
@@ -50,7 +52,12 @@ export default async function StudentProfilePage() {
         <p className="text-muted-foreground">Manage your account settings</p>
       </div>
 
-      <ProfileForm profile={profile} supervisorName={supervisorName} currentRouteName={currentRouteName} />
+      <ProfileForm
+        profile={profile}
+        supervisorName={supervisorName}
+        studyRoutes={(studyRoutes || []).map(r => ({ id: r.id, name: r.name }))}
+        currentRouteName={currentRouteName}
+      />
     </div>
   )
 }

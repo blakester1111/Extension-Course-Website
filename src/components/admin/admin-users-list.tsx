@@ -1,24 +1,15 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { StudentSupervisorAssign } from '@/components/admin/student-supervisor-assign'
 import { StaffToggleButton } from '@/components/admin/staff-toggle-button'
 import { UserRoleSelect } from '@/components/admin/user-role-select'
 import { OrganizationAssign } from '@/components/admin/organization-assign'
-import { BackenterDialog } from '@/components/admin/backenter-dialog'
+import { CourseManageDialog } from '@/components/admin/course-manage-dialog'
 import { UsersFilterBar, type SortOption } from '@/components/admin/users-filter-bar'
 import { CertPermissionToggles } from '@/components/admin/cert-permission-toggles'
-import { RouteAssign } from '@/components/admin/route-assign'
-import { enrollStudent } from '@/app/(dashboard)/admin/courses/actions'
-import { toast } from 'sonner'
-import { Plus, Trophy } from 'lucide-react'
+import { Trophy } from 'lucide-react'
 import type { UserRole } from '@/types/database'
 
 interface UserData {
@@ -63,6 +54,11 @@ export function AdminUsersList({
   honorRollRanks,
   studyRoutes,
 }: AdminUsersListProps) {
+  // Basic user list for transfer feature (id, name, email)
+  const allUsersBasic = useMemo(() =>
+    users.map(u => ({ id: u.id, full_name: u.full_name, email: u.email })),
+    [users]
+  )
   const [search, setSearch] = useState('')
   const [org, setOrg] = useState('all')
   const [audience, setAudience] = useState('all')
@@ -151,6 +147,7 @@ export function AdminUsersList({
                 currentUserRole={currentUserRole}
                 honorRank={honorRank}
                 studyRoutes={studyRoutes}
+                allUsersBasic={allUsersBasic}
               />
             )
           })}
@@ -174,6 +171,7 @@ function UserCard({
   currentUserRole,
   honorRank,
   studyRoutes,
+  allUsersBasic,
 }: {
   user: UserData
   userEnrollments: Enrollment[]
@@ -184,42 +182,14 @@ function UserCard({
   currentUserRole: UserRole
   honorRank: number | undefined
   studyRoutes: { id: string; name: string }[]
+  allUsersBasic: { id: string; full_name: string; email: string }[]
 }) {
-  const [selectedCourse, setSelectedCourse] = useState('')
-  const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [enrolling, setEnrolling] = useState(false)
-  const router = useRouter()
-
-  async function handleEnroll() {
-    if (!selectedCourse) return
-    if (u.is_staff && !invoiceNumber.trim()) {
-      toast.error('Invoice number required for staff enrollment')
-      return
-    }
-    setEnrolling(true)
-    const result = await enrollStudent(
-      u.id,
-      selectedCourse,
-      u.is_staff ? invoiceNumber.trim() : undefined
-    )
-    if (result.error) {
-      toast.error(typeof result.error === 'string' ? result.error : 'Enrollment failed')
-    } else {
-      toast.success(u.is_staff ? 'Staff enrollment pending verification' : 'Student enrolled successfully')
-      setSelectedCourse('')
-      setInvoiceNumber('')
-      router.refresh()
-    }
-    setEnrolling(false)
-  }
-
   return (
     <Card>
       <CardContent className="p-4">
-        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto] gap-x-2 gap-y-0 items-center">
-          {/* ---- Row 1 ---- */}
-          {/* Col 1: Name / Email + Honor rank */}
-          <div className="min-w-0 flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          {/* Name / Email / Rank / Joined */}
+          <div className="min-w-0 flex-1 flex items-center gap-3">
             <div className="min-w-0">
               <p className="font-medium text-sm truncate">{u.full_name}</p>
               <p className="text-xs text-muted-foreground truncate">{u.email}</p>
@@ -230,14 +200,14 @@ function UserCard({
                 #{honorRank}
               </span>
             )}
+            <span className="text-[10px] text-muted-foreground shrink-0">
+              Joined {new Date(u.created_at).toLocaleDateString()}
+            </span>
           </div>
 
-          {/* Col 2: Role label */}
-          <div className="text-center">
+          {/* Role */}
+          <div className="flex items-center gap-1 shrink-0">
             <span className="text-xs text-muted-foreground">Role:</span>
-          </div>
-          {/* Col 3: Role dropdown */}
-          <div>
             <UserRoleSelect
               profileId={u.id}
               currentRole={u.role as UserRole}
@@ -246,25 +216,27 @@ function UserCard({
             />
           </div>
 
-          {/* Col 4: Org label */}
-          <span className="text-xs text-muted-foreground">Org:</span>
-          {/* Col 5: Org dropdown */}
-          <OrganizationAssign
-            profileId={u.id}
-            currentOrg={u.organization || null}
-          />
+          {/* Org */}
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="text-xs text-muted-foreground">Org:</span>
+            <OrganizationAssign
+              profileId={u.id}
+              currentOrg={u.organization || null}
+            />
+          </div>
 
-          {/* Col 6: Supervisor label */}
-          <span className="text-xs text-muted-foreground">Supervisor:</span>
-          {/* Col 7: Supervisor dropdown */}
-          <StudentSupervisorAssign
-            studentId={u.id}
-            currentSupervisorId={u.supervisor_id}
-            supervisors={supervisors.filter(s => s.id !== u.id)}
-          />
+          {/* Supervisor */}
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="text-xs text-muted-foreground">Supervisor:</span>
+            <StudentSupervisorAssign
+              studentId={u.id}
+              currentSupervisorId={u.supervisor_id}
+              supervisors={supervisors.filter(s => s.id !== u.id)}
+            />
+          </div>
 
-          {/* Col 8: Staff + Cert perms */}
-          <div className="flex items-center gap-3">
+          {/* Staff + Cert perms */}
+          <div className="flex items-center gap-3 shrink-0">
             <StaffToggleButton profileId={u.id} isStaff={u.is_staff} />
             <CertPermissionToggles
               profileId={u.id}
@@ -273,121 +245,19 @@ function UserCard({
             />
           </div>
 
-          {/* ---- Separator ---- */}
-          <div className="col-span-8 border-t my-2" />
-
-          {/* ---- Row 2 ---- */}
-          {/* Col 1-4: Courses (span first 4 cols) */}
-          <div className="col-span-4 flex flex-wrap items-center gap-2 min-w-0">
-            <span className="text-xs text-muted-foreground shrink-0">Courses:</span>
-
-            {userEnrollments.length === 0 ? (
-              <span className="text-xs text-muted-foreground italic">None</span>
-            ) : userEnrollments.length <= 3 ? (
-              <div className="flex flex-wrap gap-1">
-                {userEnrollments.map(e => (
-                  <Badge
-                    key={e.course_id}
-                    variant={e.status === 'pending_invoice_verification' ? 'outline' : 'secondary'}
-                    className={`text-xs ${e.status === 'pending_invoice_verification' ? 'border-yellow-500 text-yellow-700' : ''}`}
-                  >
-                    {e.title}
-                    {e.status === 'pending_invoice_verification' && ' (Pending)'}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-auto py-0.5 px-2 text-xs">
-                    <Badge variant="secondary" className="text-xs">
-                      {userEnrollments.length} courses
-                    </Badge>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 p-2" align="start">
-                  <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
-                    {userEnrollments.map(e => (
-                      <Badge
-                        key={e.course_id}
-                        variant={e.status === 'pending_invoice_verification' ? 'outline' : 'secondary'}
-                        className={`text-xs justify-start ${e.status === 'pending_invoice_verification' ? 'border-yellow-500 text-yellow-700' : ''}`}
-                      >
-                        {e.title}
-                        {e.status === 'pending_invoice_verification' && ' (Pending)'}
-                      </Badge>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
-
-          {/* Col 5: Course select (aligned under Org dropdown) */}
-          <div>
-            {availableCourses.length > 0 ? (
-              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                <SelectTrigger className="w-32 h-8 text-xs">
-                  <SelectValue placeholder="Course..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableCourses.map((c) => (
-                    <SelectItem key={c.id} value={c.id} className="text-xs">
-                      {c.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <span className="text-xs text-muted-foreground">All enrolled</span>
-            )}
-          </div>
-
-          {/* Col 6: Route (under Supervisor label) */}
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">Route:</span>
-            <RouteAssign
+          {/* Courses button */}
+          <div className="shrink-0">
+            <CourseManageDialog
               studentId={u.id}
-              currentRouteId={u.study_route_id}
-              routes={studyRoutes}
+              studentName={u.full_name}
+              isStaff={u.is_staff}
+              studyRouteId={u.study_route_id}
+              enrollments={userEnrollments}
+              availableCourses={availableCourses}
+              allCourses={allCourses}
+              allUsers={allUsersBasic}
+              studyRoutes={studyRoutes}
             />
-          </div>
-
-          {/* Col 7: Invoice # (aligned under Supervisor dropdown) */}
-          <div>
-            {u.is_staff && availableCourses.length > 0 ? (
-              <Input
-                placeholder="Invoice #"
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}
-                className="w-48 h-8 text-xs"
-              />
-            ) : null}
-          </div>
-
-          {/* Col 8: Enroll + Back-Enter buttons + Joined date */}
-          <div className="flex flex-col items-end gap-1">
-            <div className="flex items-center gap-1">
-              {availableCourses.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleEnroll}
-                  disabled={!selectedCourse || enrolling || (u.is_staff && !invoiceNumber.trim())}
-                  className="h-8 px-2"
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              )}
-              <BackenterDialog
-                studentId={u.id}
-                studentName={u.full_name}
-                availableCourses={allCourses}
-              />
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              Joined {new Date(u.created_at).toLocaleDateString()}
-            </p>
           </div>
         </div>
       </CardContent>

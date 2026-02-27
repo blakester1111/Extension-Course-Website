@@ -33,14 +33,15 @@ interface SidebarLink {
   href: string
   label: string
   icon: React.ElementType
+  tourId?: string
 }
 
 const studentLinks: SidebarLink[] = [
-  { href: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/student/certificates', label: 'Certificates', icon: Award },
-  { href: '/student/honor-roll', label: 'Honor Roll', icon: Trophy },
-  { href: '/student/notifications', label: 'Notifications', icon: Bell },
-  { href: '/student/profile', label: 'Profile', icon: User },
+  { href: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard, tourId: 'student-dashboard' },
+  { href: '/student/certificates', label: 'Certificates', icon: Award, tourId: 'student-certificates' },
+  { href: '/student/honor-roll', label: 'Honor Roll', icon: Trophy, tourId: 'student-honor-roll' },
+  { href: '/student/notifications', label: 'Notifications', icon: Bell, tourId: 'student-notifications' },
+  { href: '/student/profile', label: 'Profile', icon: User, tourId: 'student-profile' },
 ]
 
 const myLearningLinks: SidebarLink[] = [
@@ -52,24 +53,24 @@ const myLearningLinks: SidebarLink[] = [
 ]
 
 const supervisorLinks: SidebarLink[] = [
-  { href: '/supervisor/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/supervisor/queue', label: 'Grading Queue', icon: ClipboardCheck },
-  { href: '/supervisor/enrollments', label: 'Pending Invoices', icon: FileText },
-  { href: '/supervisor/students', label: 'Students', icon: Users },
-  { href: '/supervisor/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/supervisor/dashboard', label: 'Dashboard', icon: LayoutDashboard, tourId: 'supervisor-dashboard' },
+  { href: '/supervisor/queue', label: 'Grading Queue', icon: ClipboardCheck, tourId: 'supervisor-queue' },
+  { href: '/supervisor/enrollments', label: 'Pending Invoices', icon: FileText, tourId: 'supervisor-invoices' },
+  { href: '/supervisor/students', label: 'Students', icon: Users, tourId: 'supervisor-students' },
+  { href: '/supervisor/reports', label: 'Reports', icon: BarChart3, tourId: 'supervisor-reports' },
 ]
 
 const adminLinks: SidebarLink[] = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/courses', label: 'Courses', icon: BookOpen },
+  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, tourId: 'admin-dashboard' },
+  { href: '/admin/courses', label: 'Courses', icon: BookOpen, tourId: 'admin-courses' },
   { href: '/admin/supervisors', label: 'Supervisors', icon: GraduationCap },
-  { href: '/admin/students', label: 'Users', icon: Users },
+  { href: '/admin/students', label: 'Users', icon: Users, tourId: 'admin-users' },
   { href: '/supervisor/queue', label: 'Grading Queue', icon: ClipboardCheck },
   { href: '/supervisor/students', label: 'All Students Progress', icon: FileText },
-  { href: '/supervisor/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/supervisor/reports', label: 'Reports', icon: BarChart3, tourId: 'admin-reports' },
   { href: '/admin/reports/revenue', label: 'Revenue', icon: DollarSign },
-  { href: '/admin/certificates', label: 'Certificates', icon: Award },
-  { href: '/admin/routes', label: 'Study Routes', icon: Route },
+  { href: '/admin/certificates', label: 'Certificates', icon: Award, tourId: 'admin-certificates' },
+  { href: '/admin/routes', label: 'Study Routes', icon: Route, tourId: 'admin-routes' },
   { href: '/admin/deadfile', label: 'Deadfile', icon: UserX },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
@@ -99,6 +100,7 @@ export function Sidebar({ role }: { role: UserRole }) {
     const linkEl = (
       <Link
         href={link.href}
+        data-tour={link.tourId || undefined}
         className={cn(
           'flex items-center rounded-md transition-colors',
           expanded ? 'gap-3 px-3 py-2' : 'justify-center px-0 py-2',
@@ -145,7 +147,7 @@ export function Sidebar({ role }: { role: UserRole }) {
 
           {showMyLearning && (
             <>
-              <div className="my-3 border-t" />
+              <div className="my-3 border-t" data-tour="my-learning" />
               {expanded && (
                 <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                   My Learning

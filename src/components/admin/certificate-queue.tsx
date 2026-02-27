@@ -7,10 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { attestCertificate, sealCertificate } from '@/app/(dashboard)/admin/certificates/actions'
-import { updateCertificateDate } from '@/app/(dashboard)/admin/courses/actions'
+import { attestCertificate, sealCertificate, updateMailStatus } from '@/app/(dashboard)/admin/certificates/actions'
+import { updateCertificateDate, deleteCertificate } from '@/app/(dashboard)/admin/courses/actions'
 import { toast } from 'sonner'
-import { CheckCircle, Stamp, FileCheck, Loader2, Pencil, Mail } from 'lucide-react'
+import { CheckCircle, Stamp, FileCheck, Loader2, Pencil, Mail, Package, PackageCheck, Trash2 } from 'lucide-react'
 
 interface CertData {
   id: string
@@ -27,6 +27,8 @@ interface CertData {
   sealedAt: string | null
   issuedAt: string | null
   createdAt: string
+  mailStatus: string | null
+  mailedAt: string | null
 }
 
 interface Props {
@@ -90,6 +92,7 @@ export function CertificateQueue({ certificates, canAttest, canSeal }: Props) {
                   {tab === 'pending_seal' && <TableHead>Cert # / Attested By</TableHead>}
                   {tab === 'issued' && <TableHead>Cert #</TableHead>}
                   {tab === 'issued' && <TableHead>Issued</TableHead>}
+                  {tab === 'issued' && <TableHead>Mail</TableHead>}
                   <TableHead>Created</TableHead>
                   {(tab === 'pending_attestation' && canAttest) && <TableHead>Action</TableHead>}
                   {(tab === 'pending_seal' && canSeal) && <TableHead>Action</TableHead>}
@@ -122,7 +125,21 @@ function CertRow({ cert, tab, canAttest, canSeal }: {
 }) {
   const [loading, setLoading] = useState(false)
   const [certNumber, setCertNumber] = useState('')
+  const [deleting, setDeleting] = useState(false)
   const router = useRouter()
+
+  async function handleDelete() {
+    if (!confirm(`Delete certificate for ${cert.studentName} — ${cert.courseTitle}? This cannot be undone.`)) return
+    setDeleting(true)
+    const result = await deleteCertificate(cert.id)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success('Certificate deleted')
+      router.refresh()
+    }
+    setDeleting(false)
+  }
 
   async function handleAttest() {
     if (!certNumber.trim()) {
@@ -193,6 +210,23 @@ function CertRow({ cert, tab, canAttest, canSeal }: {
             certId={cert.id}
             currentDate={cert.issuedAt}
           />
+        </TableCell>
+      )}
+      {tab === 'issued' && (
+        <TableCell>
+          <div className="flex items-center gap-2">
+            <MailStatusCell cert={cert} />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-1.5 text-red-500 hover:text-red-700 hover:bg-red-50"
+              onClick={handleDelete}
+              disabled={deleting}
+              title="Delete certificate"
+            >
+              {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+            </Button>
+          </div>
         </TableCell>
       )}
       <TableCell className="text-sm text-muted-foreground">
@@ -284,5 +318,64 @@ function EditableDateCell({ certId, currentDate }: { certId: string; currentDate
       {displayDate}
       <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />
     </button>
+  )
+}
+
+function MailStatusCell({ cert }: { cert: CertData }) {
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  // Only show mail tracking for students who want mail
+  if (!cert.wantsMail) {
+    return <span className="text-xs text-muted-foreground">Digital</span>
+  }
+
+  async function handleToggle() {
+    setLoading(true)
+    const newStatus = cert.mailStatus === 'mailed' ? 'needs_mailing' : 'mailed'
+    const result = await updateMailStatus(cert.id, newStatus as any)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success(newStatus === 'mailed' ? 'Marked as mailed' : 'Marked as needs mailing')
+      router.refresh()
+    }
+    setLoading(false)
+  }
+
+  if (cert.mailStatus === 'mailed') {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-auto py-0.5 px-1.5 text-xs text-green-600 hover:text-green-700 gap-1"
+          onClick={handleToggle}
+          disabled={loading}
+          title="Click to undo"
+        >
+          {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <PackageCheck className="h-3 w-3" />}
+          Mailed
+        </Button>
+        {cert.mailedAt && (
+          <span className="text-[10px] text-muted-foreground pl-1.5">
+            {new Date(cert.mailedAt).toLocaleDateString()}
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-7 text-xs gap-1"
+      onClick={handleToggle}
+      disabled={loading}
+    >
+      {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Package className="h-3 w-3" />}
+      Mark Mailed
+    </Button>
   )
 }

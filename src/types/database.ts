@@ -16,7 +16,9 @@ export interface Profile {
   is_deadfiled: boolean
   organization: Organization | null
   supervisor_id: string | null
+  study_route_id: string | null
   cert_mail_preference: CertMailPreference
+  onboarding_completed_at: string | null
   created_at: string
   updated_at: string
 }

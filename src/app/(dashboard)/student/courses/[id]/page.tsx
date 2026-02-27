@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, CheckCircle, Circle, AlertCircle, Clock } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Circle, AlertCircle, Clock, Award, ArrowRight } from 'lucide-react'
+import { findNextCourse } from '@/lib/next-course'
 
 export const metadata = {
   title: 'Course — FCDC Extension Courses',
@@ -108,6 +109,22 @@ export default async function StudentCoursePage({ params }: { params: Promise<{ 
   const completedCount = (submissions || []).filter(s => s.status === 'graded_pass').length
   const totalCount = lessons?.length || 0
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+  const isCourseComplete = completedCount >= totalCount && totalCount > 0
+
+  // If course complete, find certificate and next course
+  let certificate: { id: string } | null = null
+  let nextCourse: { id: string; title: string; slug: string } | null = null
+  if (isCourseComplete) {
+    const { data: cert } = await supabase
+      .from('certificates')
+      .select('id')
+      .eq('student_id', user.id)
+      .eq('course_id', id)
+      .maybeSingle()
+    certificate = cert
+
+    nextCourse = await findNextCourse(supabase, user.id, id)
+  }
 
   return (
     <div className="space-y-6">
@@ -126,10 +143,40 @@ export default async function StudentCoursePage({ params }: { params: Promise<{ 
 
       <div className="w-full bg-muted rounded-full h-2">
         <div
-          className="bg-primary h-2 rounded-full transition-all"
+          className={`h-2 rounded-full transition-all ${isCourseComplete ? 'bg-green-500' : 'bg-primary'}`}
           style={{ width: `${progressPercent}%` }}
         />
       </div>
+
+      {/* Course Completion Banner */}
+      {isCourseComplete && (
+        <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 dark:border-green-800">
+          <CardContent className="py-5">
+            <div className="flex items-center gap-3 mb-3">
+              <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Course Complete!</h3>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {certificate && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/student/certificates/${certificate.id}`}>
+                    <Award className="h-4 w-4 mr-2" />
+                    View Certificate
+                  </Link>
+                </Button>
+              )}
+              {nextCourse && (
+                <Button size="sm" asChild>
+                  <Link href={`/catalog/${nextCourse.slug}`}>
+                    Next Course: {nextCourse.title}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="space-y-2">
         {(lessons || []).map((lesson) => {

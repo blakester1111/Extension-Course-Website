@@ -148,11 +148,12 @@ export async function fetchMonthlyMvp(supabase: any): Promise<MonthlyMvpResult> 
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
   const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
-  // Get all passed submissions this month
+  // Get all passed submissions this month (exclude back-entered)
   const { data: subs } = await supabase
     .from('lesson_submissions')
     .select('student_id, graded_at')
     .eq('status', 'graded_pass')
+    .eq('is_backentered', false)
     .gte('graded_at', monthStart)
 
   if (!subs || subs.length === 0) {

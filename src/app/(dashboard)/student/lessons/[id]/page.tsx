@@ -112,6 +112,14 @@ export default async function StudentLessonPage({ params }: { params: Promise<{ 
         </div>
       )}
 
+      {/* Question count indicator */}
+      {(questions || []).length > 0 && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>{questions!.length} question{questions!.length !== 1 ? 's' : ''} in this lesson</span>
+          <span>Questions {questionOffset + 1}–{questionOffset + questions!.length} of course total</span>
+        </div>
+      )}
+
       <LessonForm
         submission={submission}
         questions={questions || []}

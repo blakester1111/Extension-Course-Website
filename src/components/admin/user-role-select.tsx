@@ -28,7 +28,7 @@ export function UserRoleSelect({ profileId, currentRole, currentUserId, currentU
   // Can't change your own role
   if (profileId === currentUserId) {
     return (
-      <span className="text-sm text-muted-foreground capitalize">
+      <span className="inline-block w-36 text-sm text-muted-foreground capitalize">
         {currentRole === 'super_admin' ? 'Super Admin' : currentRole}
       </span>
     )
