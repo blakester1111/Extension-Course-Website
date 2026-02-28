@@ -221,7 +221,8 @@ export function WeeklyReportExport({
           <CardDescription>{studentActivity.length} students with activity this week</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <Table className="table-fixed">
+          <div className="overflow-x-auto">
+          <Table className="table-fixed min-w-[600px]">
             <colgroup>
               <col style={{ width: '22%' }} />
               <col style={{ width: '28%' }} />
@@ -258,6 +259,7 @@ export function WeeklyReportExport({
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -267,7 +269,8 @@ export function WeeklyReportExport({
           <CardTitle>Course Breakdown</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Table className="table-fixed">
+          <div className="overflow-x-auto">
+          <Table className="table-fixed min-w-[600px]">
             <colgroup>
               <col style={{ width: '22%' }} />
               <col style={{ width: '28%' }} />
@@ -302,6 +305,7 @@ export function WeeklyReportExport({
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -312,7 +316,8 @@ export function WeeklyReportExport({
             <CardTitle>Supervisor Grading</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table className="table-fixed">
+            <div className="overflow-x-auto">
+            <Table className="table-fixed min-w-[600px]">
               <colgroup>
                 <col style={{ width: '22%' }} />
                 <col style={{ width: '28%' }} />
@@ -341,6 +346,7 @@ export function WeeklyReportExport({
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       )}

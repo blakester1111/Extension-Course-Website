@@ -186,13 +186,16 @@ function UserCard({
 }) {
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
+      <CardContent className="px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {/* Name / Email / Rank / Joined */}
-          <div className="min-w-0 flex-1 flex items-center gap-3">
-            <div className="w-48 shrink-0">
+          <div className="min-w-0 w-full sm:w-auto sm:flex-1 flex items-center gap-3">
+            <div className="min-w-0">
               <p className="font-medium text-sm truncate">{u.full_name}</p>
               <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+              <p className="text-[10px] text-muted-foreground">
+                Joined {new Date(u.created_at).toLocaleDateString()}
+              </p>
             </div>
             {honorRank && (
               <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium shrink-0">
@@ -200,9 +203,6 @@ function UserCard({
                 #{honorRank}
               </span>
             )}
-            <span className="text-[10px] text-muted-foreground shrink-0">
-              Joined {new Date(u.created_at).toLocaleDateString()}
-            </span>
           </div>
 
           {/* Role */}
@@ -227,7 +227,7 @@ function UserCard({
 
           {/* Supervisor */}
           <div className="flex items-center gap-1 shrink-0">
-            <span className="text-xs text-muted-foreground">Supervisor:</span>
+            <span className="text-xs text-muted-foreground">Sup:</span>
             <StudentSupervisorAssign
               studentId={u.id}
               currentSupervisorId={u.supervisor_id}

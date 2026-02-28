@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   LogOut, User, Menu, X, Sun, Moon,
   LayoutDashboard, BookOpen, FileText, Users, ClipboardCheck,
-  Trophy, GraduationCap, Shield, BarChart3, DollarSign, Settings, Bell,
+  Trophy, GraduationCap, Shield, BarChart3, DollarSign, Settings, Bell, Award,
 } from 'lucide-react'
 import { NotificationBell } from './notification-bell'
 import type { UserRole } from '@/types/database'
@@ -25,6 +25,7 @@ interface MobileNavLink {
 
 const mobileStudentNav: MobileNavLink[] = [
   { href: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/student/certificates', label: 'Certificates', icon: Award },
   { href: '/student/honor-roll', label: 'Honor Roll', icon: Trophy },
   { href: '/student/notifications', label: 'Notifications', icon: Bell },
   { href: '/student/profile', label: 'Profile', icon: User },
@@ -57,6 +58,8 @@ const mobileSuperAdminNav: MobileNavLink[] = [
 
 const mobileMyLearningNav: MobileNavLink[] = [
   { href: '/student/dashboard', label: 'My Courses', icon: BookOpen },
+  { href: '/student/certificates', label: 'My Certificates', icon: Award },
+  { href: '/student/honor-roll', label: 'Honor Roll', icon: Trophy },
   { href: '/student/notifications', label: 'My Notifications', icon: Bell },
   { href: '/student/profile', label: 'My Profile', icon: User },
 ]

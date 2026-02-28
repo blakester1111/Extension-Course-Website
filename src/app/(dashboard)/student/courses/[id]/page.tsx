@@ -128,16 +128,16 @@ export default async function StudentCoursePage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
+      <div className="flex items-start gap-4">
+        <Button variant="ghost" size="sm" asChild className="shrink-0 mt-1">
           <Link href="/student/dashboard">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back
           </Link>
         </Button>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold">{course.title}</h1>
-          <p className="text-muted-foreground">{completedCount} of {totalCount} lessons completed ({progressPercent}%)</p>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">{course.title}</h1>
+          <p className="text-muted-foreground text-sm">{completedCount} of {totalCount} lessons completed ({progressPercent}%)</p>
         </div>
       </div>
 
@@ -160,16 +160,16 @@ export default async function StudentCoursePage({ params }: { params: Promise<{ 
               {certificate && (
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/student/certificates/${certificate.id}`}>
-                    <Award className="h-4 w-4 mr-2" />
+                    <Award className="h-4 w-4 mr-2 shrink-0" />
                     View Certificate
                   </Link>
                 </Button>
               )}
               {nextCourse && (
-                <Button size="sm" asChild>
-                  <Link href={`/catalog/${nextCourse.slug}`}>
-                    Next Course: {nextCourse.title}
-                    <ArrowRight className="h-4 w-4 ml-2" />
+                <Button size="sm" asChild className="max-w-full">
+                  <Link href={`/catalog/${nextCourse.slug}`} className="truncate">
+                    <ArrowRight className="h-4 w-4 mr-2 shrink-0" />
+                    <span className="truncate">Next Course: {nextCourse.title}</span>
                   </Link>
                 </Button>
               )}
@@ -184,13 +184,13 @@ export default async function StudentCoursePage({ params }: { params: Promise<{ 
 
           return (
             <Card key={lesson.id}>
-              <CardContent className="flex items-center gap-4 py-4">
+              <CardContent className="flex items-center gap-3 sm:gap-4 py-3 sm:py-4">
                 {getStatusIcon(lesson.id)}
-                <div className="flex-1">
-                  <p className="font-medium">{lesson.title}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm sm:text-base truncate">{lesson.title}</p>
                 </div>
-                {getStatusLabel(lesson.id)}
-                <Button size="sm" variant={submission ? 'outline' : 'default'} asChild>
+                <div className="hidden sm:block">{getStatusLabel(lesson.id)}</div>
+                <Button size="sm" variant={submission ? 'outline' : 'default'} asChild className="shrink-0">
                   <Link href={`/student/lessons/${lesson.id}`}>
                     {submission?.status === 'graded_pass'
                       ? 'Review'

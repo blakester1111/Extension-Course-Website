@@ -95,6 +95,7 @@ export default async function SupervisorQueuePage() {
             <p className="text-center text-muted-foreground py-12">No submissions to grade</p>
           ) : (
             <TooltipProvider>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -165,6 +166,7 @@ export default async function SupervisorQueuePage() {
                 })}
               </TableBody>
             </Table>
+            </div>
             </TooltipProvider>
           )}
         </CardContent>

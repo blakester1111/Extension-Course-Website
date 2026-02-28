@@ -55,6 +55,7 @@ export default async function SupervisorEnrollmentsPage() {
           {myEnrollments.length === 0 ? (
             <p className="text-center text-muted-foreground py-12">No pending invoices</p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -83,6 +84,7 @@ export default async function SupervisorEnrollmentsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
