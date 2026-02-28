@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FileText } from 'lucide-react'
 
-export function StaffEnrollButton({ courseId }: { courseId: string }) {
+interface Props {
+  courseId: string
+  onPayInstead: () => void
+}
+
+export function StaffEnrollButton({ courseId, onPayInstead }: Props) {
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -68,6 +73,13 @@ export function StaffEnrollButton({ courseId }: { courseId: string }) {
       <p className="text-xs text-center text-muted-foreground">
         Staff enrollment — requires supervisor verification
       </p>
+      <button
+        type="button"
+        onClick={onPayInstead}
+        className="w-full text-xs text-center text-muted-foreground underline hover:text-foreground"
+      >
+        Pay online instead
+      </button>
     </div>
   )
 }

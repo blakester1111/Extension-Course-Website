@@ -7,13 +7,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { InvoiceVerifyButtons } from '@/components/supervisor/invoice-verify-buttons'
 
 export const metadata = {
-  title: 'Pending Invoices — Supervisor',
+  title: 'Pending Invoices',
 }
 
 export default async function SupervisorEnrollmentsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const isAdmin = ['admin', 'super_admin'].includes(profile?.role || '')
 
   // Get all pending invoice enrollments
   const { data: pendingEnrollments } = await supabase
@@ -26,10 +34,12 @@ export default async function SupervisorEnrollmentsPage() {
     .eq('status', 'pending_invoice_verification')
     .order('created_at', { ascending: false })
 
-  // Filter: supervisor sees their assigned students + unassigned students
-  const myEnrollments = (pendingEnrollments || []).filter((e: any) =>
-    e.student?.supervisor_id === user.id || e.student?.supervisor_id === null
-  )
+  // Admins see all; supervisors see their assigned students + unassigned students
+  const myEnrollments = isAdmin
+    ? (pendingEnrollments || [])
+    : (pendingEnrollments || []).filter((e: any) =>
+        e.student?.supervisor_id === user.id || e.student?.supervisor_id === null
+      )
 
   return (
     <div className="space-y-6">

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sendWelcomeEmail } from '@/lib/resend/send-welcome-email'
 
 async function requireSupervisorOrAdmin() {
   const supabase = await createClient()
@@ -122,6 +123,24 @@ export async function verifyInvoice(enrollmentId: string) {
       message: `Your enrollment in "${(enrollment as any).course?.title}" has been approved. Start studying now!`,
       link: `/student/courses/${enrollment.course_id}`,
     })
+
+  // Send welcome email
+  const { data: studentProfile } = await supabase
+    .from('profiles')
+    .select('email, first_name')
+    .eq('id', enrollment.student_id)
+    .single()
+
+  const courseTitle = (enrollment as any).course?.title
+  if (studentProfile?.email && courseTitle) {
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://extension.fcdc-services.com').replace(/\/$/, '')
+    await sendWelcomeEmail({
+      to: studentProfile.email,
+      firstName: studentProfile.first_name || 'Student',
+      courseName: courseTitle,
+      courseUrl: `${appUrl}/student/courses/${enrollment.course_id}`,
+    })
+  }
 
   revalidatePath('/supervisor/enrollments')
   revalidatePath('/supervisor/students')

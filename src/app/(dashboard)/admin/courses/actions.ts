@@ -5,6 +5,7 @@ import { courseSchema } from '@/lib/validations'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { checkAndCreateCertificate } from '@/lib/certificates'
+import { sendWelcomeEmail } from '@/lib/resend/send-welcome-email'
 
 async function requireAdmin() {
   const supabase = await createClient()
@@ -157,22 +158,13 @@ export async function enrollStudent(studentId: string, courseId: string, invoice
     return { error: 'Student is already enrolled in this course' }
   }
 
-  // Check if student is staff and invoice provided
-  const { data: studentProfile } = await supabase
-    .from('profiles')
-    .select('is_staff')
-    .eq('id', studentId)
-    .single()
-
-  const isStaffInvoice = studentProfile?.is_staff && invoiceNumber?.trim()
-
   const { error } = await supabase
     .from('enrollments')
     .insert({
       student_id: studentId,
       course_id: courseId,
       enrolled_by: user.id,
-      status: isStaffInvoice ? 'pending_invoice_verification' : 'active',
+      status: 'active',
       invoice_number: invoiceNumber?.trim() || null,
     })
 
@@ -187,26 +179,31 @@ export async function enrollStudent(studentId: string, courseId: string, invoice
     .eq('id', courseId)
     .single()
 
-  if (isStaffInvoice) {
-    await supabase
-      .from('notifications')
-      .insert({
-        user_id: studentId,
-        type: 'invoice_pending',
-        title: 'Enrollment Pending Approval',
-        message: `Your enrollment in "${course?.title}" is pending invoice verification by your supervisor.`,
-        link: '/student/dashboard',
-      })
-  } else {
-    await supabase
-      .from('notifications')
-      .insert({
-        user_id: studentId,
-        type: 'enrollment_confirmed',
-        title: 'Enrollment Confirmed',
-        message: `You have been enrolled in "${course?.title}". Start studying now!`,
-        link: `/student/courses/${courseId}`,
-      })
+  await supabase
+    .from('notifications')
+    .insert({
+      user_id: studentId,
+      type: 'enrollment_confirmed',
+      title: 'Enrollment Confirmed',
+      message: `You have been enrolled in "${course?.title}". Start studying now!`,
+      link: `/student/courses/${courseId}`,
+    })
+
+  // Send welcome email
+  const { data: studentProfile } = await supabase
+    .from('profiles')
+    .select('email, first_name')
+    .eq('id', studentId)
+    .single()
+
+  if (studentProfile?.email && course?.title) {
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://extension.fcdc-services.com').replace(/\/$/, '')
+    await sendWelcomeEmail({
+      to: studentProfile.email,
+      firstName: studentProfile.first_name || 'Student',
+      courseName: course.title,
+      courseUrl: `${appUrl}/student/courses/${courseId}`,
+    })
   }
 
   revalidatePath('/admin/students')
