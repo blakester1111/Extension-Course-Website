@@ -8,6 +8,14 @@ import { X, ZoomIn, ZoomOut, RotateCcw, Maximize2 } from 'lucide-react'
 
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 
+// Fix white horizontal line artifacts from sub-pixel canvas tile gaps
+const pdfCanvasFix = `
+.react-pdf__Page canvas {
+  display: block;
+  image-rendering: auto;
+}
+`
+
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
 
 interface Props {
@@ -87,6 +95,7 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
 
   return (
     <>
+      <style>{pdfCanvasFix}</style>
       {/* Clickable thumbnail card */}
       <Card
         className="cursor-pointer hover:shadow-lg transition-shadow group overflow-hidden"
@@ -110,6 +119,7 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
                 width={thumbnailWidth}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
+                devicePixelRatio={2}
               />
             </Document>
             {/* Hover overlay */}
@@ -201,6 +211,7 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
                     scale={scale}
                     renderTextLayer={false}
                     renderAnnotationLayer={false}
+                    devicePixelRatio={2}
                     className="mb-4 shadow-2xl"
                   />
                 ))}
