@@ -2,9 +2,11 @@
 
 import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { UsersFilterBar, type SortOption } from '@/components/admin/users-filter-bar'
+import { StudentNotesDialog } from '@/components/admin/student-notes-dialog'
+import { StudentMaterialsDialog } from '@/components/admin/student-materials-dialog'
+import { UserProfileDialog, type ContactInfo } from '@/components/admin/user-profile-dialog'
 
 interface StudentData {
   id: string
@@ -24,9 +26,11 @@ interface StudentData {
 interface SupervisorStudentsListProps {
   students: StudentData[]
   isAdmin: boolean
+  coursesOrdered: { id: string; title: string; category: string }[]
+  contactsByUser: Record<string, ContactInfo>
 }
 
-export function SupervisorStudentsList({ students, isAdmin }: SupervisorStudentsListProps) {
+export function SupervisorStudentsList({ students, isAdmin, coursesOrdered, contactsByUser }: SupervisorStudentsListProps) {
   const [search, setSearch] = useState('')
   const [org, setOrg] = useState('all')
   const [audience, setAudience] = useState('all')
@@ -93,28 +97,29 @@ export function SupervisorStudentsList({ students, isAdmin }: SupervisorStudents
       />
 
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle>{isAdmin ? 'Assigned Students' : 'My Students'} ({assigned.length})</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <StudentTable
-            students={assigned}
-            emptyMessage="No students match the current filters"
-            showSupervisor={isAdmin}
-          />
+        <CardContent className="space-y-3 pt-0">
+          {assigned.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No students match the current filters</p>
+          ) : (
+            assigned.map(s => (
+              <StudentCard key={s.id} student={s} coursesOrdered={coursesOrdered} contactInfo={contactsByUser[s.id] || null} />
+            ))
+          )}
         </CardContent>
       </Card>
 
       {unassigned.length > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle>Unassigned Students ({unassigned.length})</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <StudentTable
-              students={unassigned}
-              emptyMessage="No unassigned students"
-            />
+          <CardContent className="space-y-3 pt-0">
+            {unassigned.map(s => (
+              <StudentCard key={s.id} student={s} coursesOrdered={coursesOrdered} contactInfo={contactsByUser[s.id] || null} />
+            ))}
           </CardContent>
         </Card>
       )}
@@ -122,76 +127,66 @@ export function SupervisorStudentsList({ students, isAdmin }: SupervisorStudents
   )
 }
 
-function StudentTable({
-  students,
-  emptyMessage,
-  showSupervisor,
+function StudentCard({
+  student: s,
+  coursesOrdered,
+  contactInfo,
 }: {
-  students: StudentData[]
-  emptyMessage: string
-  showSupervisor?: boolean
+  student: StudentData
+  coursesOrdered: { id: string; title: string; category: string }[]
+  contactInfo: ContactInfo | null
 }) {
-  if (students.length === 0) {
-    return <p className="text-center text-muted-foreground py-8">{emptyMessage}</p>
-  }
+  const [profileOpen, setProfileOpen] = useState(false)
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            {showSupervisor && <TableHead>Supervisor</TableHead>}
-            <TableHead>Org</TableHead>
-            <TableHead>Staff</TableHead>
-            <TableHead>Courses</TableHead>
-            <TableHead>Completed</TableHead>
-            <TableHead>Pending</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {students.map((student) => (
-            <TableRow key={student.id}>
-              <TableCell className="font-medium">
-                {student.full_name}
-                {student.role !== 'student' && (
-                  <Badge variant="outline" className="ml-2 text-xs capitalize">
-                    {student.role === 'super_admin' ? 'Super Admin' : student.role}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>{student.email}</TableCell>
-              {showSupervisor && (
-                <TableCell className="text-muted-foreground">
-                  {student.supervisorName || '\u2014'}
-                </TableCell>
-              )}
-              <TableCell>
-                {student.organization ? (
-                  <Badge variant="outline" className="text-xs capitalize">{student.organization}</Badge>
-                ) : (
-                  <span className="text-muted-foreground text-xs">\u2014</span>
-                )}
-              </TableCell>
-              <TableCell>
-                {student.is_staff && <Badge variant="outline" className="text-xs">Staff</Badge>}
-              </TableCell>
-              <TableCell>{student.enrolledCourses}</TableCell>
-              <TableCell>
-                <Badge variant="secondary">{student.completedLessons} lessons</Badge>
-              </TableCell>
-              <TableCell>
-                {student.pendingSubmissions > 0 ? (
-                  <Badge>{student.pendingSubmissions} awaiting</Badge>
-                ) : (
-                  <span className="text-muted-foreground">\u2014</span>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <>
+      <div className="border rounded-md px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {/* Name / Email */}
+          <div className="min-w-0 w-full sm:w-auto sm:flex-1">
+            <button
+              onClick={() => setProfileOpen(true)}
+              className="font-medium text-sm truncate text-primary hover:underline cursor-pointer text-left"
+            >
+              {s.full_name}
+            </button>
+            <p className="text-xs text-muted-foreground truncate">{s.email}</p>
+          </div>
+
+          {/* Progress badges */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge variant="secondary" className="text-xs">{s.completedLessons} passed</Badge>
+            {s.pendingSubmissions > 0 && (
+              <Badge className="text-xs">{s.pendingSubmissions} awaiting</Badge>
+            )}
+          </div>
+
+          {/* Notes + Materials buttons */}
+          <div className="shrink-0 flex items-center gap-1.5">
+            <StudentNotesDialog studentId={s.id} studentName={s.full_name} />
+            <StudentMaterialsDialog studentId={s.id} studentName={s.full_name} courses={coursesOrdered} />
+          </div>
+        </div>
+      </div>
+
+      <UserProfileDialog
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        user={{
+          id: s.id,
+          full_name: s.full_name,
+          email: s.email,
+          role: s.role,
+          organization: s.organization,
+          supervisor_id: null,
+          is_staff: s.is_staff,
+          can_attest_certs: false,
+          can_sign_certs: false,
+          created_at: s.created_at,
+        }}
+        contactInfo={contactInfo}
+        isAdmin={false}
+      />
+    </>
   )
 }

@@ -129,6 +129,96 @@ export default async function SupervisorStudentsPage() {
   const assignedCount = studentProgress.filter(s => s.isAssigned).length
   const unassignedCount = studentProgress.filter(s => !s.isAssigned).length
 
+  // Fetch contact info: prefer profiles columns (after migration), fall back to most recent order
+  const contactsByUser: Record<string, { phone: string | null; address: string | null; city: string | null; state: string | null; zip: string | null; country: string | null }> = {}
+  for (const s of allStudents) {
+    const p = s as any
+    if (p.phone || p.address || p.city || p.state || p.zip || p.country) {
+      contactsByUser[p.id] = {
+        phone: p.phone || null,
+        address: p.address || null,
+        city: p.city || null,
+        state: p.state || null,
+        zip: p.zip || null,
+        country: p.country || null,
+      }
+    }
+  }
+
+  // Fall back to orders for students without profile contact fields
+  const studentsWithoutContact = allStudents.filter(s => !contactsByUser[s.id]).map(s => s.id)
+  if (studentsWithoutContact.length > 0) {
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('student_id, customer_phone, customer_address, customer_city, customer_state, customer_zip, customer_country, created_at')
+      .in('student_id', studentsWithoutContact)
+      .order('created_at', { ascending: false })
+
+    for (const o of orders || []) {
+      if (o.student_id && !contactsByUser[o.student_id]) {
+        contactsByUser[o.student_id] = {
+          phone: o.customer_phone,
+          address: o.customer_address,
+          city: o.customer_city,
+          state: o.customer_state,
+          zip: o.customer_zip,
+          country: o.customer_country,
+        }
+      }
+    }
+  }
+
+  // Get courses ordered by Full Chronological Route for materials dialog
+  const { data: courses } = await supabase
+    .from('courses')
+    .select('id, title, category')
+    .order('title', { ascending: true })
+
+  const { data: studyRoutes } = await supabase
+    .from('study_routes')
+    .select('id, name')
+    .order('name')
+
+  const chronRoute = (studyRoutes || []).find(r => r.name.toLowerCase().includes('chronological') && r.name.toLowerCase().includes('full'))
+  let coursesOrdered: { id: string; title: string; category: string }[] = (courses || []) as any[]
+  if (chronRoute) {
+    const { data: routeCourses } = await supabase
+      .from('study_route_courses')
+      .select('course_id, position')
+      .eq('route_id', chronRoute.id)
+      .order('position')
+    if (routeCourses && routeCourses.length > 0) {
+      const posMap = new Map(routeCourses.map(rc => [rc.course_id, rc.position]))
+      const sorted = [...(courses || [])].sort((a, b) => {
+        const posA = posMap.get(a.id) ?? 9999
+        const posB = posMap.get(b.id) ?? 9999
+        return posA - posB
+      }) as any[]
+
+      const inserts: [string, string][] = [
+        ['Advanced Procedure and Axioms', 'Advanced Procedure & Axioms and Thought Emotion and Effort'],
+        ['Scientology 8-8008', 'The Philadelphia Doctorate Course'],
+      ]
+      const result: typeof sorted = []
+      const insertedIds = new Set<string>()
+      for (const c of sorted) {
+        for (const [bookTitle, lectureTitle] of inserts) {
+          if (c.title === lectureTitle) {
+            const book = sorted.find((x: any) => x.title === bookTitle)
+            if (book && !insertedIds.has(book.id)) {
+              result.push(book)
+              insertedIds.add(book.id)
+            }
+          }
+        }
+        if (!insertedIds.has(c.id)) {
+          result.push(c)
+        }
+      }
+      coursesOrdered = result
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -136,7 +226,7 @@ export default async function SupervisorStudentsPage() {
         <p className="text-muted-foreground">{assignedCount} assigned, {unassignedCount} unassigned</p>
       </div>
 
-      <SupervisorStudentsList students={studentProgress} isAdmin={isAdmin} />
+      <SupervisorStudentsList students={studentProgress} isAdmin={isAdmin} coursesOrdered={coursesOrdered} contactsByUser={contactsByUser} />
     </div>
   )
 }

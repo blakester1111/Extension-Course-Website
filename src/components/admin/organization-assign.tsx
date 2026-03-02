@@ -40,7 +40,7 @@ export function OrganizationAssign({ profileId, currentOrg }: Props) {
       onValueChange={handleChange}
       disabled={loading}
     >
-      <SelectTrigger className="w-32 h-8 text-xs">
+      <SelectTrigger className="w-full h-8 text-xs">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

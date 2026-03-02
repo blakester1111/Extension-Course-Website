@@ -9,6 +9,7 @@ import { LessonForm } from '@/components/student/lesson-form'
 import { getOrCreateSubmission } from '../actions'
 import { ArrowLeft } from 'lucide-react'
 import { FormattedText } from '@/components/ui/formatted-text'
+import type { Question } from '@/types/database'
 
 export const metadata = {
   title: 'Lesson — FCDC Extension Courses',
@@ -45,12 +46,12 @@ export default async function StudentLessonPage({ params }: { params: Promise<{ 
   const { submission, error } = await getOrCreateSubmission(lessonId)
   if (error || !submission) redirect(`/student/courses/${courseId}`)
 
-  // Get questions
+  // Get questions (exclude correct_answer — students must not see grading manual answers)
   const { data: questions } = await supabase
     .from('questions')
-    .select('*')
+    .select('id, lesson_id, question_text, sort_order, requires_image, created_at')
     .eq('lesson_id', lessonId)
-    .order('sort_order', { ascending: true })
+    .order('sort_order', { ascending: true }) as { data: Question[] | null }
 
   // Get existing answers
   const { data: answers } = await supabase

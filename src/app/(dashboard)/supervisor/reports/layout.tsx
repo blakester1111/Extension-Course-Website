@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 const reportTabs = [
   { href: '/supervisor/reports', label: 'Overview' },
   { href: '/supervisor/reports/progress', label: 'Progress Board' },
+  { href: '/supervisor/reports/activity', label: 'Student Activity' },
   { href: '/supervisor/reports/inactive', label: 'Inactive Students' },
   { href: '/supervisor/reports/completions', label: 'Completions' },
   { href: '/supervisor/reports/grading', label: 'Grading' },
