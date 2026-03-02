@@ -155,7 +155,7 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
       >
         <CardContent className="p-0">
           <div
-            className="relative bg-muted flex items-center justify-center overflow-hidden"
+            className="relative bg-muted flex items-center justify-center overflow-hidden max-w-full"
             onContextMenu={e => e.preventDefault()}
           >
             <Document
