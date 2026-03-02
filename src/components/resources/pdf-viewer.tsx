@@ -181,29 +181,31 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
 
           {/* Scrollable PDF content */}
           <div
-            className="flex-1 overflow-auto flex justify-center p-4"
+            className="flex-1 overflow-auto p-4"
             style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
           >
-            <Document
-              file={pdfUrl}
-              onLoadSuccess={onDocumentLoadSuccess}
-              loading={
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-white">Loading document...</p>
-                </div>
-              }
-            >
-              {Array.from({ length: numPages }, (_, i) => (
-                <Page
-                  key={i + 1}
-                  pageNumber={i + 1}
-                  scale={scale}
-                  renderTextLayer={false}
-                  renderAnnotationLayer={false}
-                  className="mb-4 shadow-2xl"
-                />
-              ))}
-            </Document>
+            <div className="min-w-fit flex justify-center">
+              <Document
+                file={pdfUrl}
+                onLoadSuccess={onDocumentLoadSuccess}
+                loading={
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-white">Loading document...</p>
+                  </div>
+                }
+              >
+                {Array.from({ length: numPages }, (_, i) => (
+                  <Page
+                    key={i + 1}
+                    pageNumber={i + 1}
+                    scale={scale}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                    className="mb-4 shadow-2xl"
+                  />
+                ))}
+              </Document>
+            </div>
           </div>
         </div>
       )}
