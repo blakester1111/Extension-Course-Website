@@ -8,11 +8,14 @@ import { X, ZoomIn, ZoomOut, RotateCcw, Maximize2 } from 'lucide-react'
 
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 
-// Fix sub-pixel canvas tile gaps
-const pdfCanvasFix = `
+// Fix sub-pixel canvas tile gaps + dark bg so canvas clearing doesn't flash white
+const pdfStyles = `
 .react-pdf__Page canvas {
   display: block;
   image-rendering: auto;
+}
+.react-pdf__Page {
+  background: #1a1a1a !important;
 }
 `
 
@@ -32,10 +35,10 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
   const [fitScale, setFitScale] = useState(1)
   const [numPages, setNumPages] = useState(0)
   const [pdfRef, setPdfRef] = useState<any>(null)
-  const [snapshot, setSnapshot] = useState<{ url: string; w: number; h: number } | null>(null)
   const pagesRendered = useRef(0)
   const zoomTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
-  const contentRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const pendingScroll = useRef<{ left: number; top: number } | null>(null)
 
   function onDocumentLoadSuccess(pdf: any) {
     setNumPages(pdf.numPages)
@@ -46,8 +49,16 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
     pagesRendered.current++
     if (pagesRendered.current >= numPages && numPages > 0) {
       requestAnimationFrame(() => {
+        // Restore scroll position to keep the same content centered
+        if (pendingScroll.current && scrollRef.current) {
+          scrollRef.current.scrollTo({
+            left: pendingScroll.current.left,
+            top: pendingScroll.current.top,
+            behavior: 'instant' as ScrollBehavior,
+          })
+          pendingScroll.current = null
+        }
         setTransitioning(false)
-        setSnapshot(null)
       })
     }
   }
@@ -55,31 +66,26 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
   function handleZoomChange(newZoom: number) {
     if (newZoom === displayZoom) return
 
-    // Capture current canvas as snapshot BEFORE any changes
-    try {
-      const canvas = contentRef.current?.querySelector('.react-pdf__Page canvas') as HTMLCanvasElement | null
-      if (canvas) {
-        setSnapshot({
-          url: canvas.toDataURL('image/jpeg', 0.6),
-          w: canvas.offsetWidth,
-          h: canvas.offsetHeight,
-        })
+    // Calculate target scroll to preserve viewport center
+    const scrollEl = scrollRef.current
+    if (scrollEl) {
+      const ratio = newZoom / displayZoom
+      pendingScroll.current = {
+        left: Math.max(0, (scrollEl.scrollLeft + scrollEl.clientWidth / 2) * ratio - scrollEl.clientWidth / 2),
+        top: Math.max(0, (scrollEl.scrollTop + scrollEl.clientHeight / 2) * ratio - scrollEl.clientHeight / 2),
       }
-    } catch {
-      // canvas might be tainted
     }
 
     setDisplayZoom(newZoom)
     setTransitioning(true)
     pagesRendered.current = 0
 
-    // Clear any pending zoom (handles rapid clicks)
     if (zoomTimeoutRef.current) clearTimeout(zoomTimeoutRef.current)
 
-    // Small delay so snapshot renders before scale change triggers canvas clear
+    // Delay scale change so blur takes effect first, hiding the canvas clear
     zoomTimeoutRef.current = setTimeout(() => {
       setRenderZoom(newZoom)
-    }, 50)
+    }, 120)
   }
 
   const calcFitScale = useCallback(async () => {
@@ -111,7 +117,6 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
     setDisplayZoom(1)
     setRenderZoom(1)
     setTransitioning(false)
-    setSnapshot(null)
   }, [])
 
   useEffect(() => {
@@ -145,7 +150,7 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
 
   return (
     <>
-      <style>{pdfCanvasFix}</style>
+      <style>{pdfStyles}</style>
       {/* Clickable thumbnail card */}
       <Card
         className="cursor-pointer hover:shadow-lg transition-shadow group overflow-hidden"
@@ -194,10 +199,10 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
         >
           <style>{`@media print { body * { visibility: hidden !important; } }`}</style>
 
-          {/* Toolbar — absolutely pinned, never scrolls */}
-          <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2 bg-black/80 backdrop-blur-sm border-b border-white/10">
+          {/* Toolbar — fixed height, absolutely pinned */}
+          <div className="absolute top-0 left-0 right-0 h-12 z-20 flex items-center justify-between px-4 bg-black/80 backdrop-blur-sm border-b border-white/10">
             <h2 className="text-white text-sm font-medium truncate">{title}</h2>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -240,27 +245,20 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
             </div>
           </div>
 
-          {/* Scrollable PDF content — independent scroll region below toolbar */}
+          {/* Scrollable PDF content — starts below toolbar, fully independent */}
           <div
-            className="absolute top-[41px] bottom-0 left-0 right-0 overflow-auto p-4"
+            ref={scrollRef}
+            className="absolute top-12 bottom-0 left-0 right-0 overflow-auto p-4"
             style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
           >
-            <div ref={contentRef} className="min-w-fit flex justify-center relative">
-              {/* Blurred snapshot overlay — hides canvas clearing during zoom */}
-              {snapshot && transitioning && (
-                <img
-                  src={snapshot.url}
-                  width={snapshot.w}
-                  height={snapshot.h}
-                  alt=""
-                  className="absolute top-0 left-1/2 z-10 pointer-events-none"
-                  style={{
-                    transform: 'translateX(-50%)',
-                    filter: 'blur(6px)',
-                  }}
-                />
-              )}
-
+            <div
+              style={{
+                width: 'fit-content',
+                margin: '0 auto',
+                filter: transitioning ? 'blur(6px)' : 'none',
+                transition: 'filter 0.15s ease',
+              }}
+            >
               <Document
                 file={pdfUrl}
                 onLoadSuccess={onDocumentLoadSuccess}
