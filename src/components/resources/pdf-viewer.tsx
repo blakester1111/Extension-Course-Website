@@ -70,9 +70,10 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
       const page = await pdfRef.getPage(1)
       const viewport = page.getViewport({ scale: 1 })
       const toolbarHeight = 48
-      const padding = 32
-      const availWidth = window.innerWidth - padding
-      const availHeight = window.innerHeight - toolbarHeight - padding
+      const horizontalPadding = 32  // p-4 left + right
+      const verticalPadding = 48    // p-4 top + bottom (32) + mb-4 on page (16)
+      const availWidth = window.innerWidth - horizontalPadding
+      const availHeight = window.innerHeight - toolbarHeight - verticalPadding
       const fit = Math.min(availWidth / viewport.width, availHeight / viewport.height)
       setFitScale(fit)
       setDisplayZoom(1)
@@ -175,15 +176,15 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
       {/* Full-screen modal viewer */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-[100] bg-black/90 flex flex-col print:hidden"
+          className="fixed inset-0 z-[100] bg-black/90 flex flex-col overflow-hidden print:hidden"
           onContextMenu={e => e.preventDefault()}
           onDragStart={e => e.preventDefault()}
         >
           {/* Hide content when printing */}
           {/* eslint-disable-next-line react/no-unknown-property */}
           <style>{`@media print { body * { visibility: hidden !important; } }`}</style>
-          {/* Toolbar */}
-          <div className="flex items-center justify-between px-4 py-2 bg-black/60 backdrop-blur-sm border-b border-white/10 shrink-0">
+          {/* Toolbar — stays pinned above scroll area */}
+          <div className="flex items-center justify-between px-4 py-2 bg-black/60 backdrop-blur-sm border-b border-white/10 shrink-0 w-full z-10">
             <h2 className="text-white text-sm font-medium truncate">{title}</h2>
             <div className="flex items-center gap-1">
               <Button
