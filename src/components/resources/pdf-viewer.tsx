@@ -236,9 +236,8 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
             <div
               className="min-w-fit flex justify-center"
               style={{
-                filter: transitioning ? 'blur(4px) brightness(0.6)' : 'none',
-                opacity: transitioning ? 0.7 : 1,
-                transition: 'filter 0.15s ease, opacity 0.15s ease',
+                filter: transitioning ? 'blur(6px)' : 'none',
+                transition: 'filter 0.15s ease',
               }}
             >
               <Document
