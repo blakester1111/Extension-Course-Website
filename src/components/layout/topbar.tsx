@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   LogOut, User, Menu, X, Sun, Moon,
   LayoutDashboard, BookOpen, FileText, Users, ClipboardCheck,
-  Trophy, GraduationCap, Shield, BarChart3, DollarSign, Settings, Bell, Award,
+  Trophy, GraduationCap, Shield, BarChart3, DollarSign, Settings, Bell, Award, Mail,
 } from 'lucide-react'
 import { NotificationBell } from './notification-bell'
 import type { UserRole } from '@/types/database'
@@ -48,6 +48,7 @@ const mobileAdminNav: MobileNavLink[] = [
   { href: '/supervisor/students', label: 'All Students Progress', icon: FileText },
   { href: '/supervisor/reports', label: 'Reports', icon: BarChart3 },
   { href: '/admin/reports/revenue', label: 'Revenue', icon: DollarSign },
+  { href: '/admin/email-settings', label: 'Email Settings', icon: Mail },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 

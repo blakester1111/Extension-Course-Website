@@ -1,4 +1,5 @@
 import { resend } from './client'
+import { getEmailTemplate } from './email-defaults'
 
 interface NudgeEmailParams {
   to: string
@@ -9,6 +10,27 @@ interface NudgeEmailParams {
   daysSinceLastSubmission: number | null
 }
 
+function replacePlaceholders(
+  text: string,
+  vars: Record<string, string>,
+): string {
+  let result = text
+  for (const [key, value] of Object.entries(vars)) {
+    result = result.replaceAll(`{${key}}`, value)
+  }
+  return result
+}
+
+function textToHtml(text: string): string {
+  return text
+    .split('\n\n')
+    .map(paragraph => {
+      const inner = paragraph.replace(/\n/g, '<br/>')
+      return `<p style="color: #333; line-height: 1.7; font-size: 15px; font-family: Georgia, 'Times New Roman', serif; margin: 0 0 16px 0;">${inner}</p>`
+    })
+    .join('')
+}
+
 export async function sendNudgeEmail({
   to,
   studentFirstName,
@@ -17,57 +39,51 @@ export async function sendNudgeEmail({
   courseNames,
   daysSinceLastSubmission,
 }: NudgeEmailParams) {
-  const courseList = courseNames.length > 0
-    ? courseNames.map(name => `<li>${name}</li>`).join('')
-    : '<li>Your enrolled courses</li>'
-
-  const timeMessage = daysSinceLastSubmission !== null
-    ? `It's been <strong>${daysSinceLastSubmission} day${daysSinceLastSubmission === 1 ? '' : 's'}</strong> since your last lesson submission.`
-    : `We noticed you haven't submitted any lessons yet.`
+  const template = await getEmailTemplate('nudge')
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://extension.fcdc-services.com').replace(/\/$/, '')
 
+  const daysStr = daysSinceLastSubmission !== null
+    ? `${daysSinceLastSubmission}`
+    : 'N/A'
+
+  const vars: Record<string, string> = {
+    studentName: studentFirstName,
+    supervisorName: supervisorFullName,
+    daysSinceSubmission: daysStr,
+    courseList: courseNames.join(', '),
+  }
+
+  const subject = replacePlaceholders(template.subject, vars)
+  const bodyHtml = textToHtml(replacePlaceholders(template.body, vars))
+  const signatureHtml = textToHtml(replacePlaceholders(template.signature, vars))
+
   const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #171717; margin-bottom: 8px;">How Are Your Studies Going?</h2>
+    <div style="font-family: Georgia, 'Times New Roman', serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd;">
+      <!-- Orange Header -->
+      <div style="background-color: #E8731A; padding: 14px 24px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 22px; letter-spacing: 3px; font-weight: bold; font-family: Arial, Helvetica, sans-serif;">REMINDER</h1>
+      </div>
 
-      <p style="color: #525252; line-height: 1.7; font-size: 15px;">
-        Hi ${studentFirstName},
-      </p>
+      <!-- Body -->
+      <div style="padding: 28px 32px; background-color: #fafafa;">
+        ${bodyHtml}
 
-      <p style="color: #525252; line-height: 1.7; font-size: 15px;">
-        ${timeMessage} We'd love to see you keep the momentum going!
-      </p>
+        <div style="text-align: right; margin-top: 24px;">
+          ${signatureHtml}
+        </div>
 
-      <p style="color: #525252; line-height: 1.7; font-size: 15px;">
-        You're currently enrolled in:
-      </p>
+        <div style="text-align: center; margin-top: 28px;">
+          <a href="${appUrl}/student/dashboard" style="background-color: #E8731A; color: white; padding: 12px 28px; text-decoration: none; border-radius: 4px; display: inline-block; font-size: 14px; font-family: Arial, Helvetica, sans-serif; font-weight: bold; letter-spacing: 0.5px;">
+            Go to My Courses
+          </a>
+        </div>
+      </div>
 
-      <ul style="color: #525252; line-height: 1.9; font-size: 15px; padding-left: 20px;">
-        ${courseList}
-      </ul>
-
-      <p style="color: #525252; line-height: 1.7; font-size: 15px;">
-        Completing at least <strong>one lesson per week</strong> is the best way to make steady progress. Even a small amount of study each day adds up quickly!
-      </p>
-
-      <p style="margin-top: 24px;">
-        <a href="${appUrl}/student/dashboard" style="background-color: #171717; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-size: 15px;">
-          Go to My Courses
-        </a>
-      </p>
-
-      <p style="color: #525252; line-height: 1.7; font-size: 15px; margin-top: 24px;">
-        If you have any questions or need help, just reply to this email. I'm here to help!
-      </p>
-
-      <p style="color: #525252; line-height: 1.7; font-size: 15px;">
-        Best,<br/>
-        ${supervisorFullName}
-      </p>
-
-      <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 24px 0;" />
-      <p style="color: #a3a3a3; font-size: 12px;">FCDC Extension Courses</p>
+      <!-- Orange Footer -->
+      <div style="background-color: #E8731A; padding: 14px 24px; text-align: center;">
+        <span style="color: white; margin: 0; font-size: 18px; letter-spacing: 3px; font-weight: bold; font-family: Arial, Helvetica, sans-serif;">EXTENSION COURSES</span>
+      </div>
     </div>
   `
 
@@ -75,7 +91,7 @@ export async function sendNudgeEmail({
     await resend.emails.send({
       from: `${supervisorFullName} <${senderEmail}>`,
       to,
-      subject: 'How are your Extension Courses going?',
+      subject,
       html,
     })
   } catch (error) {

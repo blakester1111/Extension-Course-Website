@@ -23,6 +23,7 @@ import {
   UserX,
   Route,
   Receipt,
+  Mail,
 } from 'lucide-react'
 import {
   Tooltip,
@@ -74,6 +75,7 @@ const adminLinks: SidebarLink[] = [
   { href: '/admin/certificates', label: 'Certificates', icon: Award, tourId: 'admin-certificates' },
   { href: '/admin/routes', label: 'Study Routes', icon: Route, tourId: 'admin-routes' },
   { href: '/admin/deadfile', label: 'Deadfile', icon: UserX },
+  { href: '/admin/email-settings', label: 'Email Settings', icon: Mail },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 

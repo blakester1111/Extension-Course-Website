@@ -1,19 +1,5 @@
 import { resend } from './client'
-
-// Organization-specific email recipients
-const FOUNDATION_EMAILS = [
-  'blakester1111@gmail.com',
-  'tomclapp@thefoundingchurch.org',
-  'maddi.arndt@gmail.com',
-  'extcrse_dcf@scientology.net',
-  'erin.gravitt@scientology.net',
-]
-
-const DAY_EMAILS = [
-  'justdust78@yahoo.com',
-  'erin.gravitt@scientology.net',
-  'kirstenspl@gmail.com',
-]
+import { getSaleRecipients } from './email-defaults'
 
 interface SaleNotificationParams {
   courseName: string
@@ -30,21 +16,12 @@ interface SaleNotificationParams {
   organization?: string | null
 }
 
-function getRecipients(organization: string | null | undefined): string[] {
-  if (organization === 'day') return DAY_EMAILS
-  if (organization === 'foundation') return FOUNDATION_EMAILS
-
-  // "I don't know" or unset: use SALE_NOTIFICATION_EMAILS env var (all recipients)
-  const envRecipients = (process.env.SALE_NOTIFICATION_EMAILS || '')
-    .split(',')
-    .map((e) => e.trim())
-    .filter(Boolean)
-
-  return envRecipients.length > 0 ? envRecipients : [...new Set([...DAY_EMAILS, ...FOUNDATION_EMAILS])]
-}
-
 export async function sendSaleNotificationEmail(params: SaleNotificationParams) {
-  const recipients = getRecipients(params.organization)
+  const org = params.organization === 'day' ? 'day'
+    : params.organization === 'foundation' ? 'foundation'
+    : 'unknown'
+
+  const recipients = await getSaleRecipients(org)
 
   if (recipients.length === 0) {
     console.warn('No sale notification email recipients configured, skipping')
