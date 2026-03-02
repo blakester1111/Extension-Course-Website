@@ -6,15 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { X, ZoomIn, ZoomOut, RotateCcw, Maximize2 } from 'lucide-react'
 
-import 'react-pdf/dist/Page/AnnotationLayer.css'
-
-// Fix sub-pixel canvas tile gaps + dark bg so canvas clearing doesn't flash white
+// Scoped styles — only target elements inside [data-pdf-viewer]
 const pdfStyles = `
-.react-pdf__Page canvas {
+[data-pdf-viewer] .react-pdf__Page canvas {
   display: block;
   image-rendering: auto;
 }
-.react-pdf__Page {
+[data-pdf-viewer] .react-pdf__Page {
   background: #1a1a1a !important;
 }
 `
@@ -150,7 +148,6 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
 
   return (
     <>
-      <style>{pdfStyles}</style>
       {/* Clickable thumbnail card */}
       <Card
         className="cursor-pointer hover:shadow-lg transition-shadow group overflow-hidden"
@@ -193,11 +190,12 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
       {/* Full-screen modal viewer */}
       {isOpen && (
         <div
+          data-pdf-viewer
           className="fixed inset-0 z-[100] bg-black/90 print:hidden"
           onContextMenu={e => e.preventDefault()}
           onDragStart={e => e.preventDefault()}
         >
-          <style>{`@media print { body * { visibility: hidden !important; } }`}</style>
+          <style>{pdfStyles}{`\n@media print { body * { visibility: hidden !important; } }`}</style>
 
           {/* Toolbar — fixed height, absolutely pinned */}
           <div className="absolute top-0 left-0 right-0 h-12 z-20 flex items-center justify-between px-4 bg-black/80 backdrop-blur-sm border-b border-white/10">
