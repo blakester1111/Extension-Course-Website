@@ -117,6 +117,8 @@ function RouteEditor({ route, allCourses }: { route: RouteData; allCourses: { id
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [addCourseId, setAddCourseId] = useState('')
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
   const router = useRouter()
 
   const hasChanges = JSON.stringify(courses) !== JSON.stringify(route.courses.map(c => c.courseId))
@@ -203,10 +205,47 @@ function RouteEditor({ route, allCourses }: { route: RouteData; allCourses: { id
             {courses.map((courseId, idx) => {
               const course = allCourses.find(c => c.id === courseId)
               if (!course) return null
+
+              const isDragging = dragIdx === idx
+              const isOver = overIdx === idx && dragIdx !== idx
+
               return (
-                <div key={courseId} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/50 group">
+                <div
+                  key={courseId}
+                  draggable
+                  onDragStart={(e) => {
+                    setDragIdx(idx)
+                    e.dataTransfer.effectAllowed = 'move'
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = 'move'
+                    setOverIdx(idx)
+                  }}
+                  onDragLeave={() => {
+                    if (overIdx === idx) setOverIdx(null)
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    if (dragIdx !== null && dragIdx !== idx) {
+                      const updated = [...courses]
+                      const [moved] = updated.splice(dragIdx, 1)
+                      updated.splice(idx, 0, moved)
+                      setCourses(updated)
+                    }
+                    setDragIdx(null)
+                    setOverIdx(null)
+                  }}
+                  onDragEnd={() => {
+                    setDragIdx(null)
+                    setOverIdx(null)
+                  }}
+                  className={`flex items-center gap-2 py-1.5 px-2 rounded group transition-colors ${
+                    isDragging ? 'opacity-40' : ''
+                  } ${isOver ? 'bg-primary/10 border border-primary/30 border-dashed' : 'hover:bg-muted/50'}`}
+                >
                   <span className="text-xs font-mono text-muted-foreground w-6 text-right">{idx + 1}.</span>
-                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50" />
+                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
                   <span className="flex-1 text-sm">{course.title}</span>
                   <Badge variant="secondary" className={`text-xs ${categoryColor(course.category)}`}>
                     {course.category === 'basics' ? 'B' : course.category === 'congresses' ? 'C' : 'A'}
