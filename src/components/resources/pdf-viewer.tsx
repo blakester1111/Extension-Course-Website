@@ -26,7 +26,7 @@ interface Props {
 
 export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Props) {
   const [isOpen, setIsOpen] = useState(false)
-  const [scale, setScale] = useState(1)
+  const [zoomLevel, setZoomLevel] = useState(1) // 1=fit, 2=200%, 3=300%, etc.
   const [fitScale, setFitScale] = useState(1)
   const [numPages, setNumPages] = useState(0)
   const [pdfRef, setPdfRef] = useState<any>(null)
@@ -48,7 +48,7 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
       const availHeight = window.innerHeight - toolbarHeight - padding
       const fit = Math.min(availWidth / viewport.width, availHeight / viewport.height)
       setFitScale(fit)
-      setScale(fit)
+      setZoomLevel(1)
     } catch {
       // fallback
     }
@@ -62,6 +62,7 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
 
   const handleClose = useCallback(() => {
     setIsOpen(false)
+    setZoomLevel(1)
   }, [])
 
   // Keyboard: Escape to close, block Ctrl+S/Ctrl+P when viewer open
@@ -154,18 +155,20 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => setScale(s => Math.max(fitScale * 0.5, s - fitScale * 0.25))}
+                onClick={() => setZoomLevel(z => Math.max(1, z - 1))}
+                disabled={zoomLevel <= 1}
               >
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <span className="text-white text-xs w-14 text-center">
-                {Math.abs(scale - fitScale) < 0.01 ? 'Fit' : `${Math.round((scale / fitScale) * 100)}%`}
+                {zoomLevel === 1 ? 'Fit' : `${zoomLevel * 100}%`}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => setScale(s => Math.min(fitScale * 5, s + fitScale * 0.25))}
+                onClick={() => setZoomLevel(z => Math.min(5, z + 1))}
+                disabled={zoomLevel >= 5}
               >
                 <ZoomIn className="h-4 w-4" />
               </Button>
@@ -173,7 +176,8 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => setScale(fitScale)}
+                onClick={() => setZoomLevel(1)}
+                disabled={zoomLevel === 1}
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
@@ -194,7 +198,10 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
             className="flex-1 overflow-auto p-4"
             style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
           >
-            <div className="min-w-fit flex justify-center">
+            <div
+              className="min-w-fit flex justify-center"
+              style={{ zoom: zoomLevel }}
+            >
               <Document
                 file={pdfUrl}
                 onLoadSuccess={onDocumentLoadSuccess}
@@ -208,7 +215,7 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
                   <Page
                     key={i + 1}
                     pageNumber={i + 1}
-                    scale={scale}
+                    scale={fitScale}
                     renderTextLayer={false}
                     renderAnnotationLayer={false}
                     devicePixelRatio={2}
