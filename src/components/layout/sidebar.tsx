@@ -24,6 +24,7 @@ import {
   Route,
   Receipt,
   Mail,
+  Library,
 } from 'lucide-react'
 import {
   Tooltip,
@@ -42,6 +43,7 @@ const studentLinks: SidebarLink[] = [
   { href: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard, tourId: 'student-dashboard' },
   { href: '/student/certificates', label: 'Certificates', icon: Award, tourId: 'student-certificates' },
   { href: '/student/honor-roll', label: 'Honor Roll', icon: Trophy, tourId: 'student-honor-roll' },
+  { href: '/resources', label: 'Resources', icon: Library },
   { href: '/student/notifications', label: 'Notifications', icon: Bell, tourId: 'student-notifications' },
   { href: '/student/profile', label: 'Profile', icon: User, tourId: 'student-profile' },
 ]
@@ -50,6 +52,7 @@ const myLearningLinks: SidebarLink[] = [
   { href: '/student/dashboard', label: 'My Courses', icon: BookOpen },
   { href: '/student/certificates', label: 'My Certificates', icon: Award },
   { href: '/student/honor-roll', label: 'Honor Roll', icon: Trophy },
+  { href: '/resources', label: 'Resources', icon: Library },
   { href: '/student/notifications', label: 'My Notifications', icon: Bell },
   { href: '/student/profile', label: 'My Profile', icon: User },
 ]

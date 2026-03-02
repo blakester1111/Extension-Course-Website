@@ -19,16 +19,38 @@ interface Props {
 export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [scale, setScale] = useState(1)
+  const [fitScale, setFitScale] = useState(1)
   const [numPages, setNumPages] = useState(0)
+  const [pdfRef, setPdfRef] = useState<any>(null)
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages)
+  function onDocumentLoadSuccess(pdf: any) {
+    setNumPages(pdf.numPages)
+    setPdfRef(pdf)
   }
 
+  // Calculate fit-to-window scale when viewer opens or PDF loads
+  const calcFitScale = useCallback(async () => {
+    if (!pdfRef) return
+    try {
+      const page = await pdfRef.getPage(1)
+      const viewport = page.getViewport({ scale: 1 })
+      const toolbarHeight = 48
+      const padding = 32
+      const availWidth = window.innerWidth - padding
+      const availHeight = window.innerHeight - toolbarHeight - padding
+      const fit = Math.min(availWidth / viewport.width, availHeight / viewport.height)
+      setFitScale(fit)
+      setScale(fit)
+    } catch {
+      // fallback
+    }
+  }, [pdfRef])
+
   const handleOpen = useCallback(() => {
-    setScale(1)
     setIsOpen(true)
-  }, [])
+    // Recalculate on next tick when viewport is known
+    setTimeout(() => calcFitScale(), 50)
+  }, [calcFitScale])
 
   const handleClose = useCallback(() => {
     setIsOpen(false)
@@ -47,6 +69,11 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, handleClose])
+
+  // Recalculate fit when PDF ref becomes available while modal is open
+  useEffect(() => {
+    if (isOpen && pdfRef) calcFitScale()
+  }, [isOpen, pdfRef, calcFitScale])
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -117,18 +144,18 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => setScale(s => Math.max(0.5, s - 0.25))}
+                onClick={() => setScale(s => Math.max(fitScale * 0.5, s - fitScale * 0.25))}
               >
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <span className="text-white text-xs w-14 text-center">
-                {Math.round(scale * 100)}%
+                {Math.abs(scale - fitScale) < 0.01 ? 'Fit' : `${Math.round((scale / fitScale) * 100)}%`}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => setScale(s => Math.min(3, s + 0.25))}
+                onClick={() => setScale(s => Math.min(fitScale * 5, s + fitScale * 0.25))}
               >
                 <ZoomIn className="h-4 w-4" />
               </Button>
@@ -136,7 +163,7 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => setScale(1)}
+                onClick={() => setScale(fitScale)}
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>

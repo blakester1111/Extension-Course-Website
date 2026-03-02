@@ -1,3 +1,7 @@
+export const dynamic = 'force-dynamic'
+
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { ProtectedPdfViewer } from '@/components/resources/pdf-viewer'
 
 export const metadata = {
@@ -5,12 +9,16 @@ export const metadata = {
   description: 'Study charts and reference materials for extension course students.',
 }
 
-export default function ResourcesPage() {
+export default async function ResourcesPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold">Resources</h1>
-        <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
+        <p className="text-muted-foreground mt-1 text-sm sm:text-base">
           Study charts and reference materials for your extension courses.
         </p>
       </div>

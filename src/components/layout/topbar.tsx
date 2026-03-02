@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   LogOut, User, Menu, X, Sun, Moon,
   LayoutDashboard, BookOpen, FileText, Users, ClipboardCheck,
-  Trophy, GraduationCap, Shield, BarChart3, DollarSign, Settings, Bell, Award, Mail,
+  Trophy, GraduationCap, Shield, BarChart3, DollarSign, Settings, Bell, Award, Mail, Library,
 } from 'lucide-react'
 import { NotificationBell } from './notification-bell'
 import type { UserRole } from '@/types/database'
@@ -27,6 +27,7 @@ const mobileStudentNav: MobileNavLink[] = [
   { href: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/student/certificates', label: 'Certificates', icon: Award },
   { href: '/student/honor-roll', label: 'Honor Roll', icon: Trophy },
+  { href: '/resources', label: 'Resources', icon: Library },
   { href: '/student/notifications', label: 'Notifications', icon: Bell },
   { href: '/student/profile', label: 'Profile', icon: User },
 ]
@@ -61,6 +62,7 @@ const mobileMyLearningNav: MobileNavLink[] = [
   { href: '/student/dashboard', label: 'My Courses', icon: BookOpen },
   { href: '/student/certificates', label: 'My Certificates', icon: Award },
   { href: '/student/honor-roll', label: 'Honor Roll', icon: Trophy },
+  { href: '/resources', label: 'Resources', icon: Library },
   { href: '/student/notifications', label: 'My Notifications', icon: Bell },
   { href: '/student/profile', label: 'My Profile', icon: User },
 ]
@@ -115,9 +117,6 @@ export function Topbar() {
           </Link>
           <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
             How It Works
-          </Link>
-          <Link href="/resources" className="text-muted-foreground hover:text-foreground transition-colors">
-            Resources
           </Link>
           <Link href="/calculator" className="text-muted-foreground hover:text-foreground transition-colors">
             Calculator
@@ -334,13 +333,6 @@ export function Topbar() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   How It Works
-                </Link>
-                <Link
-                  href="/resources"
-                  className="block px-2 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Resources
                 </Link>
                 <Link
                   href="/calculator"
