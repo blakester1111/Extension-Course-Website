@@ -116,6 +116,9 @@ export function Topbar() {
           <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
             How It Works
           </Link>
+          <Link href="/resources" className="text-muted-foreground hover:text-foreground transition-colors">
+            Resources
+          </Link>
           <Link href="/calculator" className="text-muted-foreground hover:text-foreground transition-colors">
             Calculator
           </Link>
@@ -290,6 +293,13 @@ export function Topbar() {
                     How It Works
                   </Link>
                   <Link
+                    href="/resources"
+                    className="flex items-center gap-3 px-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Resources
+                  </Link>
+                  <Link
                     href="/calculator"
                     className="flex items-center gap-3 px-2 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
@@ -324,6 +334,13 @@ export function Topbar() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   How It Works
+                </Link>
+                <Link
+                  href="/resources"
+                  className="block px-2 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Resources
                 </Link>
                 <Link
                   href="/calculator"
