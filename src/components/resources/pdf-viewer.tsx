@@ -154,8 +154,11 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
         onClick={handleOpen}
       >
         <CardContent className="p-0">
+          {/* contain:inline-size breaks the min-content sizing chain from react-pdf's
+              internal minWidth:min-content, preventing it from pushing the page wider */}
           <div
-            className="relative bg-muted flex items-center justify-center overflow-hidden max-w-full"
+            className="relative bg-muted flex items-center justify-center overflow-hidden"
+            style={{ contain: 'inline-size' }}
             onContextMenu={e => e.preventDefault()}
           >
             <Document
