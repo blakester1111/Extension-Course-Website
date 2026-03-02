@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -26,14 +26,41 @@ interface Props {
 
 export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Props) {
   const [isOpen, setIsOpen] = useState(false)
-  const [zoomLevel, setZoomLevel] = useState(1) // 1=fit, 2=200%, 3=300%, etc.
+  const [displayZoom, setDisplayZoom] = useState(1)   // shown in toolbar immediately
+  const [renderZoom, setRenderZoom] = useState(1)      // actual scale sent to react-pdf
+  const [transitioning, setTransitioning] = useState(false)
   const [fitScale, setFitScale] = useState(1)
   const [numPages, setNumPages] = useState(0)
   const [pdfRef, setPdfRef] = useState<any>(null)
+  const pagesRendered = useRef(0)
+  const zoomTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   function onDocumentLoadSuccess(pdf: any) {
     setNumPages(pdf.numPages)
     setPdfRef(pdf)
+  }
+
+  function handlePageRenderSuccess() {
+    pagesRendered.current++
+    if (pagesRendered.current >= numPages && numPages > 0) {
+      // Canvas is ready — lift the blur
+      requestAnimationFrame(() => setTransitioning(false))
+    }
+  }
+
+  function handleZoomChange(newZoom: number) {
+    if (newZoom === displayZoom) return
+    // Update label immediately
+    setDisplayZoom(newZoom)
+    // Clear any pending zoom (handles rapid clicks)
+    if (zoomTimeoutRef.current) clearTimeout(zoomTimeoutRef.current)
+    // Apply blur first
+    setTransitioning(true)
+    pagesRendered.current = 0
+    // After blur takes effect, trigger the actual re-render
+    zoomTimeoutRef.current = setTimeout(() => {
+      setRenderZoom(newZoom)
+    }, 180)
   }
 
   // Calculate fit-to-window scale when viewer opens or PDF loads
@@ -48,7 +75,8 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
       const availHeight = window.innerHeight - toolbarHeight - padding
       const fit = Math.min(availWidth / viewport.width, availHeight / viewport.height)
       setFitScale(fit)
-      setZoomLevel(1)
+      setDisplayZoom(1)
+      setRenderZoom(1)
     } catch {
       // fallback
     }
@@ -62,7 +90,14 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
 
   const handleClose = useCallback(() => {
     setIsOpen(false)
-    setZoomLevel(1)
+    setDisplayZoom(1)
+    setRenderZoom(1)
+    setTransitioning(false)
+  }, [])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => { if (zoomTimeoutRef.current) clearTimeout(zoomTimeoutRef.current) }
   }, [])
 
   // Keyboard: Escape to close, block Ctrl+S/Ctrl+P when viewer open
@@ -155,20 +190,20 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => setZoomLevel(z => Math.max(1, z - 1))}
-                disabled={zoomLevel <= 1}
+                onClick={() => handleZoomChange(displayZoom - 1)}
+                disabled={displayZoom <= 1 || transitioning}
               >
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <span className="text-white text-xs w-14 text-center">
-                {zoomLevel === 1 ? 'Fit' : `${zoomLevel * 100}%`}
+                {displayZoom === 1 ? 'Fit' : `${displayZoom * 100}%`}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => setZoomLevel(z => Math.min(5, z + 1))}
-                disabled={zoomLevel >= 5}
+                onClick={() => handleZoomChange(displayZoom + 1)}
+                disabled={displayZoom >= 5 || transitioning}
               >
                 <ZoomIn className="h-4 w-4" />
               </Button>
@@ -176,8 +211,8 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => setZoomLevel(1)}
-                disabled={zoomLevel === 1}
+                onClick={() => handleZoomChange(1)}
+                disabled={displayZoom === 1 || transitioning}
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
@@ -200,7 +235,11 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
           >
             <div
               className="min-w-fit flex justify-center"
-              style={{ zoom: zoomLevel }}
+              style={{
+                filter: transitioning ? 'blur(4px) brightness(0.6)' : 'none',
+                opacity: transitioning ? 0.7 : 1,
+                transition: 'filter 0.15s ease, opacity 0.15s ease',
+              }}
             >
               <Document
                 file={pdfUrl}
@@ -215,10 +254,11 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
                   <Page
                     key={i + 1}
                     pageNumber={i + 1}
-                    scale={fitScale}
+                    scale={fitScale * renderZoom}
                     renderTextLayer={false}
                     renderAnnotationLayer={false}
                     devicePixelRatio={2}
+                    onRenderSuccess={handlePageRenderSuccess}
                     className="mb-4 shadow-2xl"
                   />
                 ))}
