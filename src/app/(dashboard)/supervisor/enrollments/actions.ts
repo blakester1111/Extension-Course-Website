@@ -133,12 +133,11 @@ export async function verifyInvoice(enrollmentId: string) {
 
   const courseTitle = (enrollment as any).course?.title
   if (studentProfile?.email && courseTitle) {
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://extension.fcdc-services.com').replace(/\/$/, '')
     await sendWelcomeEmail({
       to: studentProfile.email,
       firstName: studentProfile.first_name || 'Student',
       courseName: courseTitle,
-      courseUrl: `${appUrl}/student/courses/${enrollment.course_id}`,
+      courseId: enrollment.course_id,
     })
   }
 

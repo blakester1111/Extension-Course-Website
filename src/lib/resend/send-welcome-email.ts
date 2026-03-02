@@ -1,11 +1,12 @@
 import { resend } from './client'
 import { getEmailTemplate } from './email-defaults'
+import { getAppUrl } from './get-app-url'
 
 interface WelcomeEmailParams {
   to: string
   firstName: string
   courseName: string
-  courseUrl: string
+  courseId: string
 }
 
 function replacePlaceholders(
@@ -29,8 +30,10 @@ function textToHtml(text: string): string {
     .join('')
 }
 
-export async function sendWelcomeEmail({ to, firstName, courseName, courseUrl }: WelcomeEmailParams) {
+export async function sendWelcomeEmail({ to, firstName, courseName, courseId }: WelcomeEmailParams) {
   const template = await getEmailTemplate('welcome')
+  const appUrl = await getAppUrl()
+  const courseUrl = `${appUrl}/student/courses/${courseId}`
 
   const vars: Record<string, string> = {
     firstName,

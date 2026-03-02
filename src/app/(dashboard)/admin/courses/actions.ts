@@ -197,12 +197,11 @@ export async function enrollStudent(studentId: string, courseId: string, invoice
     .single()
 
   if (studentProfile?.email && course?.title) {
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://extension.fcdc-services.com').replace(/\/$/, '')
     await sendWelcomeEmail({
       to: studentProfile.email,
       firstName: studentProfile.first_name || 'Student',
       courseName: course.title,
-      courseUrl: `${appUrl}/student/courses/${courseId}`,
+      courseId,
     })
   }
 

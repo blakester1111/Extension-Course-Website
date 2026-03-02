@@ -128,12 +128,11 @@ export async function POST(req: NextRequest) {
 
           // Send welcome email to the student
           if (course) {
-            const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://extension.fcdc-services.com').replace(/\/$/, '')
             await sendWelcomeEmail({
               to: order.customer_email,
               firstName: order.customer_first_name,
               courseName: course.title,
-              courseUrl: `${appUrl}/student/courses/${courseId}`,
+              courseId,
             })
           }
         }

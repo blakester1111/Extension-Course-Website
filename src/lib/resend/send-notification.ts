@@ -1,4 +1,5 @@
 import { resend } from './client'
+import { getAppUrl } from './get-app-url'
 
 interface NotificationEmailParams {
   to: string
@@ -10,8 +11,9 @@ interface NotificationEmailParams {
 
 export async function sendNotificationEmail({ to, subject, text, link, buttonText }: NotificationEmailParams) {
   try {
+    const appUrl = await getAppUrl()
     const linkHtml = link
-      ? `<p style="margin-top: 16px;"><a href="${process.env.NEXT_PUBLIC_APP_URL}${link}" style="background-color: #171717; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">${buttonText || 'View Details'}</a></p>`
+      ? `<p style="margin-top: 16px;"><a href="${appUrl}${link}" style="background-color: #171717; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">${buttonText || 'View Details'}</a></p>`
       : ''
 
     await resend.emails.send({

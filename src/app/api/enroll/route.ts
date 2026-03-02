@@ -71,12 +71,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (profile?.email) {
-      const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://extension.fcdc-services.com').replace(/\/$/, '')
       await sendWelcomeEmail({
         to: profile.email,
         firstName: profile.first_name || 'Student',
         courseName: course.title,
-        courseUrl: `${appUrl}/student/courses/${courseId}`,
+        courseId,
       })
     }
 

@@ -1,5 +1,6 @@
 import { resend } from './client'
 import { getEmailTemplate } from './email-defaults'
+import { getAppUrl } from './get-app-url'
 
 interface NudgeEmailParams {
   to: string
@@ -41,7 +42,7 @@ export async function sendNudgeEmail({
 }: NudgeEmailParams) {
   const template = await getEmailTemplate('nudge')
 
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://extension.fcdc-services.com').replace(/\/$/, '')
+  const appUrl = await getAppUrl()
 
   const daysStr = daysSinceLastSubmission !== null
     ? `${daysSinceLastSubmission}`
