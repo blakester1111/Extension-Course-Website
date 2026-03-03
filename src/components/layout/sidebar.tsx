@@ -43,7 +43,7 @@ const studentLinks: SidebarLink[] = [
   { href: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard, tourId: 'student-dashboard' },
   { href: '/student/certificates', label: 'Certificates', icon: Award, tourId: 'student-certificates' },
   { href: '/student/honor-roll', label: 'Honor Roll', icon: Trophy, tourId: 'student-honor-roll' },
-  { href: '/resources', label: 'Resources', icon: Library },
+  { href: '/resources', label: 'Resources', icon: Library, tourId: 'student-resources' },
   { href: '/student/notifications', label: 'Notifications', icon: Bell, tourId: 'student-notifications' },
   { href: '/student/profile', label: 'Profile', icon: User, tourId: 'student-profile' },
 ]
@@ -68,18 +68,18 @@ const supervisorLinks: SidebarLink[] = [
 const adminLinks: SidebarLink[] = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, tourId: 'admin-dashboard' },
   { href: '/admin/courses', label: 'Courses', icon: BookOpen, tourId: 'admin-courses' },
-  { href: '/admin/supervisors', label: 'Supervisors', icon: GraduationCap },
+  { href: '/admin/supervisors', label: 'Supervisors', icon: GraduationCap, tourId: 'admin-supervisors' },
   { href: '/admin/students', label: 'Users', icon: Users, tourId: 'admin-users' },
-  { href: '/supervisor/queue', label: 'Grading Queue', icon: ClipboardCheck },
-  { href: '/supervisor/enrollments', label: 'Pending Invoices', icon: Receipt },
-  { href: '/supervisor/students', label: 'All Students Progress', icon: FileText },
+  { href: '/supervisor/queue', label: 'Grading Queue', icon: ClipboardCheck, tourId: 'admin-queue' },
+  { href: '/supervisor/enrollments', label: 'Pending Invoices', icon: Receipt, tourId: 'admin-invoices' },
+  { href: '/supervisor/students', label: 'All Students Progress', icon: FileText, tourId: 'admin-all-students' },
   { href: '/supervisor/reports', label: 'Reports', icon: BarChart3, tourId: 'admin-reports' },
-  { href: '/admin/reports/revenue', label: 'Revenue', icon: DollarSign },
+  { href: '/admin/reports/revenue', label: 'Revenue', icon: DollarSign, tourId: 'admin-revenue' },
   { href: '/admin/certificates', label: 'Certificates', icon: Award, tourId: 'admin-certificates' },
   { href: '/admin/routes', label: 'Study Routes', icon: Route, tourId: 'admin-routes' },
-  { href: '/admin/deadfile', label: 'Deadfile', icon: UserX },
-  { href: '/admin/email-settings', label: 'Email Settings', icon: Mail },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/admin/deadfile', label: 'Deadfile', icon: UserX, tourId: 'admin-deadfile' },
+  { href: '/admin/email-settings', label: 'Email Settings', icon: Mail, tourId: 'admin-email-settings' },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, tourId: 'admin-settings' },
 ]
 
 const superAdminLinks: SidebarLink[] = [

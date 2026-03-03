@@ -29,6 +29,11 @@ export default async function ResourcesPage() {
           title="The Complete Routes to Knowledge"
           thumbnailWidth={380}
         />
+        <ProtectedPdfViewer
+          pdfUrl="/materials-guide-chart.pdf"
+          title="The Materials Guide Chart"
+          thumbnailWidth={380}
+        />
       </div>
     </div>
   )

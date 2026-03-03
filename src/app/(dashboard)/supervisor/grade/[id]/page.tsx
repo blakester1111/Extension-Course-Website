@@ -32,7 +32,7 @@ export default async function GradeSubmissionPage({ params }: { params: Promise<
 
   const { data: answers } = await supabase
     .from('answers')
-    .select('*, question:questions(question_text, sort_order, requires_image)')
+    .select('*, question:questions(question_text, sort_order, requires_image, correct_answer)')
     .eq('submission_id', submissionId)
     .order('question(sort_order)', { ascending: true } as any)
 

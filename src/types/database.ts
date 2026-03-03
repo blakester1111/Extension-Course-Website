@@ -56,9 +56,27 @@ export interface Question {
   id: string
   lesson_id: string
   question_text: string
+  correct_answer: string | null
   sort_order: number
   requires_image: boolean
   created_at: string
+  updated_at: string
+}
+
+export interface StudentNote {
+  id: string
+  student_id: string
+  author_id: string
+  content: string
+  created_at: string
+}
+
+export interface StudentMaterial {
+  id: string
+  student_id: string
+  course_id: string
+  owns_book: boolean
+  owns_lectures: boolean
   updated_at: string
 }
 

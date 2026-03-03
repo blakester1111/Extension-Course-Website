@@ -8,11 +8,11 @@ import { Badge } from '@/components/ui/badge'
 import { gradeSubmission } from '@/app/(dashboard)/supervisor/grade/actions'
 import type { LessonSubmission, Answer } from '@/types/database'
 import { toast } from 'sonner'
-import { CheckCircle, XCircle, Lock, MessageSquare, Send, ZoomIn } from 'lucide-react'
+import { CheckCircle, XCircle, Lock, MessageSquare, Send, ZoomIn, BookOpen } from 'lucide-react'
 import { FormattedText } from '@/components/ui/formatted-text'
 
 interface AnswerWithQuestion extends Answer {
-  question?: { question_text: string; sort_order: number; requires_image?: boolean }
+  question?: { question_text: string; sort_order: number; requires_image?: boolean; correct_answer?: string | null }
 }
 
 interface GradingFormProps {
@@ -159,6 +159,16 @@ export function GradingForm({ submission, answers, totalQuestions, questionOffse
                   <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/answer-images/${answer.image_path}`} target="_blank" rel="noopener noreferrer" className="inline-block">
                     <img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/answer-images/${answer.image_path}`} alt="Student diagram" className="max-h-64 rounded-md border hover:opacity-90 cursor-pointer" />
                   </a>
+                </div>
+              )}
+
+              {answer.question?.correct_answer && (
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-3 rounded-md">
+                  <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+                    <BookOpen className="h-3 w-3" />
+                    Grading Manual Answer
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap">{answer.question.correct_answer}</p>
                 </div>
               )}
 

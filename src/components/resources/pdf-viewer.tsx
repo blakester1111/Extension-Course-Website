@@ -1,21 +1,10 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { X, ZoomIn, ZoomOut, RotateCcw, Maximize2 } from 'lucide-react'
-
-// Scoped styles — only target elements inside [data-pdf-viewer]
-const pdfStyles = `
-[data-pdf-viewer] .react-pdf__Page canvas {
-  display: block;
-  image-rendering: auto;
-}
-[data-pdf-viewer] .react-pdf__Page {
-  background: #1a1a1a !important;
-}
-`
+import { X, Maximize2 } from 'lucide-react'
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
 
@@ -27,124 +16,24 @@ interface Props {
 
 export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Props) {
   const [isOpen, setIsOpen] = useState(false)
-  const [displayZoom, setDisplayZoom] = useState(1)
-  const [renderZoom, setRenderZoom] = useState(1)
-  const [transitioning, setTransitioning] = useState(false)
-  const [fitScale, setFitScale] = useState(1)
-  const [numPages, setNumPages] = useState(0)
-  const [pdfRef, setPdfRef] = useState<any>(null)
-  const pagesRendered = useRef(0)
-  const zoomTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const pendingScroll = useRef<{ left: number; top: number } | null>(null)
 
-  function onDocumentLoadSuccess(pdf: any) {
-    setNumPages(pdf.numPages)
-    setPdfRef(pdf)
-  }
+  const handleOpen = useCallback(() => setIsOpen(true), [])
+  const handleClose = useCallback(() => setIsOpen(false), [])
 
-  function handlePageRenderSuccess() {
-    pagesRendered.current++
-    if (pagesRendered.current >= numPages && numPages > 0) {
-      requestAnimationFrame(() => {
-        // Restore scroll position to keep the same content centered
-        if (pendingScroll.current && scrollRef.current) {
-          scrollRef.current.scrollTo({
-            left: pendingScroll.current.left,
-            top: pendingScroll.current.top,
-            behavior: 'instant' as ScrollBehavior,
-          })
-          pendingScroll.current = null
-        }
-        setTransitioning(false)
-      })
-    }
-  }
-
-  function handleZoomChange(newZoom: number) {
-    if (newZoom === displayZoom) return
-
-    // Calculate target scroll to preserve viewport center
-    const scrollEl = scrollRef.current
-    if (scrollEl) {
-      const ratio = newZoom / displayZoom
-      pendingScroll.current = {
-        left: Math.max(0, (scrollEl.scrollLeft + scrollEl.clientWidth / 2) * ratio - scrollEl.clientWidth / 2),
-        top: Math.max(0, (scrollEl.scrollTop + scrollEl.clientHeight / 2) * ratio - scrollEl.clientHeight / 2),
-      }
-    }
-
-    setDisplayZoom(newZoom)
-    setTransitioning(true)
-    pagesRendered.current = 0
-
-    if (zoomTimeoutRef.current) clearTimeout(zoomTimeoutRef.current)
-
-    // Delay scale change so blur takes effect first, hiding the canvas clear
-    zoomTimeoutRef.current = setTimeout(() => {
-      setRenderZoom(newZoom)
-    }, 120)
-  }
-
-  const calcFitScale = useCallback(async () => {
-    if (!pdfRef) return
-    try {
-      const page = await pdfRef.getPage(1)
-      const viewport = page.getViewport({ scale: 1 })
-      const toolbarHeight = 48
-      const horizontalPadding = 32
-      const verticalPadding = 48
-      const availWidth = window.innerWidth - horizontalPadding
-      const availHeight = window.innerHeight - toolbarHeight - verticalPadding
-      const fit = Math.min(availWidth / viewport.width, availHeight / viewport.height)
-      setFitScale(fit)
-      setDisplayZoom(1)
-      setRenderZoom(1)
-    } catch {
-      // fallback
-    }
-  }, [pdfRef])
-
-  const handleOpen = useCallback(() => {
-    setIsOpen(true)
-    setTimeout(() => calcFitScale(), 50)
-  }, [calcFitScale])
-
-  const handleClose = useCallback(() => {
-    setIsOpen(false)
-    setDisplayZoom(1)
-    setRenderZoom(1)
-    setTransitioning(false)
-  }, [])
-
-  useEffect(() => {
-    return () => { if (zoomTimeoutRef.current) clearTimeout(zoomTimeoutRef.current) }
-  }, [])
-
+  // Lock body scroll and handle Escape when modal is open
   useEffect(() => {
     if (!isOpen) return
+    document.body.style.overflow = 'hidden'
+
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') handleClose()
-      if ((e.ctrlKey || e.metaKey) && ['s', 'p', 'c'].includes(e.key.toLowerCase())) {
-        e.preventDefault()
-      }
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, handleClose])
-
-  useEffect(() => {
-    if (isOpen && pdfRef) calcFitScale()
-  }, [isOpen, pdfRef, calcFitScale])
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
+    return () => {
       document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleKeyDown)
     }
-    return () => { document.body.style.overflow = '' }
-  }, [isOpen])
+  }, [isOpen, handleClose])
 
   return (
     <>
@@ -154,8 +43,6 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
         onClick={handleOpen}
       >
         <CardContent className="p-0">
-          {/* contain:inline-size breaks the min-content sizing chain from react-pdf's
-              internal minWidth:min-content, preventing it from pushing the page wider */}
           <div
             className="relative bg-muted flex items-center justify-center overflow-hidden"
             style={{ contain: 'inline-size' }}
@@ -190,100 +77,32 @@ export function ProtectedPdfViewer({ pdfUrl, title, thumbnailWidth = 400 }: Prop
         </CardContent>
       </Card>
 
-      {/* Full-screen modal viewer */}
+      {/* Full-screen modal — native browser PDF viewer via iframe */}
       {isOpen && (
-        <div
-          data-pdf-viewer
-          className="fixed inset-0 z-[100] bg-black/90 print:hidden"
-          onContextMenu={e => e.preventDefault()}
-          onDragStart={e => e.preventDefault()}
-        >
-          <style>{pdfStyles}{`\n@media print { body * { visibility: hidden !important; } }`}</style>
+        <div className="fixed inset-0 z-[100] bg-black/90 print:hidden">
+          <style>{`@media print { body * { visibility: hidden !important; } }`}</style>
 
-          {/* Toolbar — fixed height, absolutely pinned */}
+          {/* Title bar with close button */}
           <div className="absolute top-0 left-0 right-0 h-12 z-20 flex items-center justify-between px-4 bg-black/80 backdrop-blur-sm border-b border-white/10">
             <h2 className="text-white text-sm font-medium truncate">{title}</h2>
-            <div className="flex items-center gap-1 shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => handleZoomChange(displayZoom - 1)}
-                disabled={displayZoom <= 1 || transitioning}
-              >
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-              <span className="text-white text-xs w-14 text-center">
-                {displayZoom === 1 ? 'Fit' : `${displayZoom * 100}%`}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => handleZoomChange(displayZoom + 1)}
-                disabled={displayZoom >= 5 || transitioning}
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={() => handleZoomChange(1)}
-                disabled={displayZoom === 1 || transitioning}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              <div className="w-px h-5 bg-white/20 mx-1" />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={handleClose}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white hover:bg-white/20 shrink-0"
+              onClick={handleClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
 
-          {/* Scrollable PDF content — starts below toolbar, fully independent */}
-          <div
-            ref={scrollRef}
-            className="absolute top-12 bottom-0 left-0 right-0 overflow-auto p-4"
-            style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
-          >
-            <div
-              style={{
-                width: 'fit-content',
-                margin: '0 auto',
-                filter: transitioning ? 'blur(6px)' : 'none',
-                transition: 'filter 0.15s ease',
-              }}
-            >
-              <Document
-                file={pdfUrl}
-                onLoadSuccess={onDocumentLoadSuccess}
-                loading={
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-white">Loading document...</p>
-                  </div>
-                }
-              >
-                {Array.from({ length: numPages }, (_, i) => (
-                  <Page
-                    key={i + 1}
-                    pageNumber={i + 1}
-                    scale={fitScale * renderZoom}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                    devicePixelRatio={3}
-                    onRenderSuccess={handlePageRenderSuccess}
-                    className="mb-4 shadow-2xl"
-                  />
-                ))}
-              </Document>
-            </div>
-          </div>
+          {/* Native PDF viewer — browser handles zoom, scroll, rendering */}
+          <iframe
+            src={`${pdfUrl}#navpanes=0`}
+            className="absolute top-12 bottom-0 left-0 right-0 w-full border-0"
+            style={{ height: 'calc(100% - 3rem)' }}
+            title={title}
+            allow="fullscreen"
+          />
         </div>
       )}
     </>

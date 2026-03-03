@@ -25,12 +25,10 @@ function getTourSteps(role: UserRole): TourStep[] {
     case 'student':
       return studentTourSteps
     case 'supervisor':
-      // Supervisor gets their own tour + student tour
-      return [...supervisorTourSteps, ...studentTourSteps]
+      return supervisorTourSteps
     case 'admin':
     case 'super_admin':
-      // Admin gets admin + supervisor + student tour
-      return [...adminTourSteps, ...supervisorTourSteps.filter(s => s.target !== 'my-learning'), ...studentTourSteps]
+      return adminTourSteps
     default:
       return studentTourSteps
   }
