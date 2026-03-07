@@ -11,6 +11,11 @@ export const EMAIL_DEFAULTS = {
     body: 'Dear {firstName},\n\nThank you for enrolling in {courseName}! We\'re excited to have you on board.\n\nHere\'s how the extension course works:\n1. Log in to your account and go to your course.\n2. Each lesson includes materials to study and questions to answer.\n3. Once you\'ve completed a lesson, submit your answers for review.\n4. Your supervisor will grade your lesson and provide feedback.\n5. After passing, you\'ll move on to the next lesson.\n\nWe encourage you to complete at least one lesson per week to maintain good momentum and get the most out of the course.',
     signature: 'Good luck with your studies!\n\nFCDC Extension Courses',
   },
+  registration: {
+    subject: 'New User Registration — FCDC Extension Courses',
+    body: 'A new user has registered on the FCDC Extension Courses site.\n\nName: {fullName}\nEmail: {email}\nDate: {date}',
+    signature: 'FCDC Extension Courses',
+  },
   sale_recipients: {
     day: [
       'justdust78@yahoo.com',
@@ -26,6 +31,10 @@ export const EMAIL_DEFAULTS = {
     ],
     unknown: [] as string[],
   },
+  registration_recipients: [
+    'blakester1111@gmail.com',
+    'tom@thefoundingchurch.org',
+  ],
 }
 
 export interface EmailTemplate {
@@ -34,7 +43,7 @@ export interface EmailTemplate {
   signature: string
 }
 
-export async function getEmailTemplate(key: 'nudge' | 'welcome'): Promise<EmailTemplate> {
+export async function getEmailTemplate(key: 'nudge' | 'welcome' | 'registration'): Promise<EmailTemplate> {
   try {
     const supabase = createAdminClient()
     const { data } = await supabase
@@ -87,4 +96,24 @@ export async function getSaleRecipients(org: 'day' | 'foundation' | 'unknown'): 
   }
 
   return defaults
+}
+
+export async function getRegistrationRecipients(): Promise<string[]> {
+  try {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'email_recipients_registration')
+      .maybeSingle()
+
+    if (data?.value) {
+      const parsed = JSON.parse(data.value)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch (e) {
+    console.error('Failed to fetch registration recipients:', e)
+  }
+
+  return EMAIL_DEFAULTS.registration_recipients
 }

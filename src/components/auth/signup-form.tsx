@@ -42,6 +42,13 @@ export function SignupForm() {
       return
     }
 
+    // Fire-and-forget registration notification
+    fetch('/api/registration-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName: data.full_name, email: data.email }),
+    }).catch(() => {})
+
     // If session exists, user was auto-confirmed — redirect to dashboard
     if (signUpData.session) {
       const { data: profile } = await supabase

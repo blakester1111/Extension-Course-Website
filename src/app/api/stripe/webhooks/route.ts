@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
     const courseId = metadata.course_id
 
     if (!orderId || !courseId) {
-      console.error('Missing metadata in Stripe session:', session.id)
-      return NextResponse.json({ error: 'Missing metadata' }, { status: 400 })
+      console.log('Ignoring checkout session without app metadata:', session.id)
+      return NextResponse.json({ received: true })
     }
 
     const supabase = createAdminClient()

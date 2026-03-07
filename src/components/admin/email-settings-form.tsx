@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Check, RotateCcw, Mail, Users, Send } from 'lucide-react'
-import { saveEmailTemplate, saveSaleRecipients } from '@/app/(dashboard)/admin/email-settings/actions'
+import { Check, RotateCcw, Mail, Users, Send, UserPlus } from 'lucide-react'
+import { saveEmailTemplate, saveSaleRecipients, saveRegistrationRecipients } from '@/app/(dashboard)/admin/email-settings/actions'
 
 interface EmailTemplate {
   subject: string
@@ -25,10 +25,14 @@ interface SaleRecipients {
 interface Props {
   nudgeTemplate: EmailTemplate
   welcomeTemplate: EmailTemplate
+  registrationTemplate: EmailTemplate
   saleRecipients: SaleRecipients
+  registrationRecipients: string[]
   nudgeDefaults: EmailTemplate
   welcomeDefaults: EmailTemplate
+  registrationDefaults: EmailTemplate
   saleRecipientsDefaults: SaleRecipients
+  registrationRecipientsDefaults: string[]
 }
 
 function PlaceholderBadges({ placeholders }: { placeholders: string[] }) {
@@ -56,7 +60,7 @@ function TemplateCard({
   title: string
   description: string
   icon: React.ElementType
-  templateKey: 'nudge' | 'welcome'
+  templateKey: 'nudge' | 'welcome' | 'registration'
   template: EmailTemplate
   defaults: EmailTemplate
   placeholders: string[]
@@ -266,13 +270,97 @@ function RecipientsCard({
   )
 }
 
+function RegistrationRecipientsCard({
+  recipients,
+  defaults,
+}: {
+  recipients: string[]
+  defaults: string[]
+}) {
+  const [emails, setEmails] = useState(recipients.join('\n'))
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  function parseEmails(text: string): string[] {
+    return text
+      .split(/[\n,]+/)
+      .map(e => e.trim())
+      .filter(e => e.includes('@'))
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    setSaved(false)
+    try {
+      await saveRegistrationRecipients(parseEmails(emails))
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (e) {
+      alert('Failed to save: ' + (e as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function handleReset() {
+    setEmails(defaults.join('\n'))
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <UserPlus className="h-5 w-5" />
+          Registration Notification Recipients
+        </CardTitle>
+        <CardDescription>
+          Configure who receives email notifications when a new user registers on the site.
+          Enter one email address per line.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="max-w-md space-y-2">
+          <Label>Recipients</Label>
+          <Textarea
+            value={emails}
+            onChange={e => setEmails(e.target.value)}
+            placeholder="one@example.com&#10;two@example.com"
+            rows={4}
+            className="font-mono text-sm"
+          />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving...' : 'Save Recipients'}
+          </Button>
+          <Button variant="outline" onClick={handleReset} size="sm">
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+            Reset to Default
+          </Button>
+          {saved && (
+            <span className="text-sm text-green-600 flex items-center gap-1">
+              <Check className="h-4 w-4" />
+              Saved
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function EmailSettingsForm({
   nudgeTemplate,
   welcomeTemplate,
+  registrationTemplate,
   saleRecipients,
+  registrationRecipients,
   nudgeDefaults,
   welcomeDefaults,
+  registrationDefaults,
   saleRecipientsDefaults,
+  registrationRecipientsDefaults,
 }: Props) {
   return (
     <div className="space-y-6">
@@ -296,9 +384,24 @@ export function EmailSettingsForm({
         placeholders={['firstName', 'courseName']}
       />
 
+      <TemplateCard
+        title="Registration Notification Email"
+        description="Sent to staff when a new user registers on the site (not a course enrollment, just account creation)."
+        icon={UserPlus}
+        templateKey="registration"
+        template={registrationTemplate}
+        defaults={registrationDefaults}
+        placeholders={['fullName', 'email', 'date']}
+      />
+
       <RecipientsCard
         recipients={saleRecipients}
         defaults={saleRecipientsDefaults}
+      />
+
+      <RegistrationRecipientsCard
+        recipients={registrationRecipients}
+        defaults={registrationRecipientsDefaults}
       />
     </div>
   )

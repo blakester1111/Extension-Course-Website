@@ -28,14 +28,14 @@ export default async function EmailSettingsPage() {
   const { data: settings } = await supabase
     .from('site_settings')
     .select('key, value')
-    .in('key', ['email_template_nudge', 'email_template_welcome', 'email_recipients_sale'])
+    .in('key', ['email_template_nudge', 'email_template_welcome', 'email_template_registration', 'email_recipients_sale', 'email_recipients_registration'])
 
   const settingsMap: Record<string, string> = {}
   for (const s of settings || []) {
     settingsMap[s.key] = s.value
   }
 
-  function parseTemplate(key: string, defaultKey: 'nudge' | 'welcome') {
+  function parseTemplate(key: string, defaultKey: 'nudge' | 'welcome' | 'registration') {
     try {
       if (settingsMap[key]) return JSON.parse(settingsMap[key])
     } catch { /* use defaults */ }
@@ -51,9 +51,20 @@ export default async function EmailSettingsPage() {
     return EMAIL_DEFAULTS.sale_recipients
   }
 
+  function parseRegistrationRecipients() {
+    try {
+      if (settingsMap.email_recipients_registration) {
+        return JSON.parse(settingsMap.email_recipients_registration)
+      }
+    } catch { /* use defaults */ }
+    return EMAIL_DEFAULTS.registration_recipients
+  }
+
   const nudgeTemplate = parseTemplate('email_template_nudge', 'nudge')
   const welcomeTemplate = parseTemplate('email_template_welcome', 'welcome')
+  const registrationTemplate = parseTemplate('email_template_registration', 'registration')
   const saleRecipients = parseRecipients()
+  const registrationRecipients = parseRegistrationRecipients()
 
   return (
     <div className="space-y-6">
@@ -67,10 +78,14 @@ export default async function EmailSettingsPage() {
       <EmailSettingsForm
         nudgeTemplate={nudgeTemplate}
         welcomeTemplate={welcomeTemplate}
+        registrationTemplate={registrationTemplate}
         saleRecipients={saleRecipients}
+        registrationRecipients={registrationRecipients}
         nudgeDefaults={EMAIL_DEFAULTS.nudge}
         welcomeDefaults={EMAIL_DEFAULTS.welcome}
+        registrationDefaults={EMAIL_DEFAULTS.registration}
         saleRecipientsDefaults={EMAIL_DEFAULTS.sale_recipients}
+        registrationRecipientsDefaults={EMAIL_DEFAULTS.registration_recipients}
       />
     </div>
   )

@@ -22,7 +22,7 @@ async function requireAdmin() {
 }
 
 export async function saveEmailTemplate(
-  key: 'nudge' | 'welcome',
+  key: 'nudge' | 'welcome' | 'registration',
   template: { subject: string; body: string; signature: string },
 ) {
   const supabase = await requireAdmin()
@@ -50,6 +50,23 @@ export async function saveSaleRecipients(
     .from('site_settings')
     .upsert({
       key: 'email_recipients_sale',
+      value: JSON.stringify(recipients),
+      updated_at: new Date().toISOString(),
+    })
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/email-settings')
+  return { success: true }
+}
+
+export async function saveRegistrationRecipients(recipients: string[]) {
+  const supabase = await requireAdmin()
+
+  const { error } = await supabase
+    .from('site_settings')
+    .upsert({
+      key: 'email_recipients_registration',
       value: JSON.stringify(recipients),
       updated_at: new Date().toISOString(),
     })
